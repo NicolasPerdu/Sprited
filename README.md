@@ -1,0 +1,2 @@
+# Sprited
+Sprited Editor
