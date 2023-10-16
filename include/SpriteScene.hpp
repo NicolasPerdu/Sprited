@@ -14,9 +14,15 @@
 #include <vector>
 #include <opencv2/opencv.hpp>
 
+class MainWindow;
+
 class SpriteScene : public QLabel {
 public:
-    SpriteScene(QWidget* parent = nullptr) : QLabel(parent) {}
+    SpriteScene(QWidget* parent = nullptr);
+    
+    void setMainWindow(MainWindow* main) {
+        this->win = main;
+    }
     
     std::vector<cv::Rect>& getRect() {
         return rect;
@@ -34,15 +40,19 @@ public:
         this->sprites = sprites;
     }
     
+    cv::Rect mergeRect();
+    
 protected:
     void mousePressEvent(QMouseEvent *ev);
     void paintEvent(QPaintEvent* event);
     
 private:
     bool isPointInsideAABB(const cv::Point& point, const cv::Rect& box);
-    bool aabb(cv::Rect a, cv::Rect b);
+    //bool aabb(cv::Rect a, cv::Rect b);
     std::vector<cv::Rect> rect;
+    std::vector<std::pair<int, cv::Rect>> rectSelected;
     std::vector<cv::Mat> sprites;
+    MainWindow *win = nullptr;
 };
 
 #endif /* SpriteScene_hpp */

@@ -24,6 +24,7 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    ui->image->setMainWindow(this);
     
     QAction *openAct = new QAction(tr("&Open..."), this);
     openAct->setShortcuts(QKeySequence::Open);
@@ -72,8 +73,11 @@ MainWindow::MainWindow(QWidget *parent)
     QPushButton *exportJsonButton = new QPushButton("Json", tab1);
     connect(exportJsonButton, &QPushButton::clicked, this, &MainWindow::exportJson);
     
-    QPushButton *mergeButton = new QPushButton("Merge Box", tab1);
-    connect(mergeButton, &QPushButton::clicked, this, &MainWindow::enableMerge);
+    selectButton = new QPushButton("Select Box", tab1);
+    connect(selectButton, &QPushButton::clicked, this, &MainWindow::enableSelection);
+    
+    QPushButton *mergeButton = new QPushButton("Merge", tab1);
+    connect(mergeButton, &QPushButton::clicked, this, &MainWindow::merge);
     
     SpriteSelectorTab *selectorTab = new SpriteSelectorTab(tab2);
     //QPushButton *button2 = new QPushButton("Button in Tab 2", tab2);
@@ -86,6 +90,7 @@ MainWindow::MainWindow(QWidget *parent)
     
     sliceLayout->addLayout(hLayoutSplit);
     sliceLayout->addLayout(hLayoutExport);
+    sliceLayout->addWidget(selectButton);
     sliceLayout->addWidget(mergeButton);
     
     editorLayout->addWidget(selectorTab);
@@ -94,8 +99,20 @@ MainWindow::MainWindow(QWidget *parent)
     tabWidget->addTab(tab2, "Editor");
 }
 
-void MainWindow::enableMerge() {
-    mergeEnabled = !mergeEnabled;
+void MainWindow::merge() {
+    ui->image->mergeRect();
+}
+
+void MainWindow::enableSelection() {
+    selectEnabled = !selectEnabled;
+    
+    if(selectEnabled) {
+        selectButton->setStyleSheet("background-color: #0046fc; border-width: 1px; border-radius: 6px; padding: 3px;");
+        //mergeButton->update();
+    } else {
+        selectButton->setStyleSheet("");
+        //mergeButton->update();
+    }
 }
 
 void MainWindow::open()
