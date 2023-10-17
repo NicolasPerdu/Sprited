@@ -1,27 +1,22 @@
 //
-//  SpriteSelectorTab.hpp
+//  AnimationScene.hpp
 //  Sprited
 //
-//  Created by Vulcain on 15/10/2023.
+//  Created by Vulcain on 17/10/2023.
 //
 
-#ifndef SpriteSelectorTab_hpp
-#define SpriteSelectorTab_hpp
+#ifndef AnimationScene_hpp
+#define AnimationScene_hpp
 
 #include <stdio.h>
-
-#include <stdio.h>
-#include <QLabel>
-#include <QPainter>
-#include <vector>
+#include <QWidget>
 #include <opencv2/opencv.hpp>
 
-class SpriteSelectorTab : public QLabel {
+class QTableWidget;
+
+class AnimationScene : QWidget {
 public:
-    SpriteSelectorTab(QWidget* parent = nullptr) : QLabel(parent) {
-        setWindowFlags(windowFlags() | Qt::WindowStaysOnTopHint);
-        setGeometry(100, 100, 400, 400);
-    }
+    AnimationScene(QWidget* parent = nullptr);
     
     std::vector<cv::Rect>& getRect() {
         return rect;
@@ -39,15 +34,15 @@ public:
         this->sprites = sprites;
     }
     
-    QImage MatToQImage(const cv::Mat& mat);
     
 protected:
     //void mousePressEvent(QMouseEvent *ev);
-    void paintEvent(QPaintEvent* event);
+    //void paintEvent(QPaintEvent* event);
     
 private:
     std::vector<cv::Rect> rect;
     std::vector<cv::Mat> sprites;
+    QTableWidget *table = nullptr;
 };
 
-#endif /* SpriteSelectorTab_hpp */
+#endif /* AnimationScene_hpp */

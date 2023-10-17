@@ -58,11 +58,17 @@ cv::Rect SpriteScene::mergeRect() {
     
     rect.push_back(res);
     
+    cv::Mat sprite = spritesheet(res).clone();
+    sprites.push_back(sprite);
+    
     std::set st{minX.first, minY.first, maxX.first, maxY.first};
     
     for(auto& el : st) {
         rect[el] = rect.back();
         rect.pop_back();
+        
+        sprites[el] = sprites.back();
+        sprites.pop_back();
         //rect.erase(rect.begin()+el);
     }
     

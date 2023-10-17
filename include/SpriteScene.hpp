@@ -40,6 +40,10 @@ public:
         this->sprites = sprites;
     }
     
+    void setSpritesheet(cv::Mat &spritesheet) {
+        this->spritesheet = spritesheet;
+    }
+    
     cv::Rect mergeRect();
     
 protected:
@@ -52,6 +56,7 @@ private:
     std::vector<cv::Rect> rect;
     std::vector<std::pair<int, cv::Rect>> rectSelected;
     std::vector<cv::Mat> sprites;
+    cv::Mat spritesheet;
     MainWindow *win = nullptr;
 };
 

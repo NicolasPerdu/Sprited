@@ -1,5 +1,8 @@
 #include "include/MainWindow.hpp"
 #include "include/SpriteSelectorTab.hpp"
+#include "include/SpriteScene.hpp"
+#include "include/AnimationScene.hpp"
+
 #include "ui_MainWindow.h"
 
 #include <QFileDialog>
@@ -17,19 +20,23 @@
 #include <QPushButton>
 
 #include <vector>
-#include <opencv2/opencv.hpp>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    ui->image->setMainWindow(this);
+    setWindowTitle("Sprited");
     
-    QAction *openAct = new QAction(tr("&Open..."), this);
+    QAction *openAct = new QAction(tr("&Open Image..."), this);
     openAct->setShortcuts(QKeySequence::Open);
     openAct->setStatusTip(tr("Open an existing file"));
-    connect(openAct, &QAction::triggered, this, &MainWindow::open);
+    connect(openAct, &QAction::triggered, this, &MainWindow::openImage);
+
+    QAction *saveAct = new QAction(tr("&Save..."), this);
+    saveAct->setShortcuts(QKeySequence::Save);
+    openAct->setStatusTip(tr("Save an existing project"));
+    connect(saveAct, &QAction::triggered, this, &MainWindow::save);
 
     auto fileMenu = menuBar()->addMenu(tr("&File"));
     fileMenu->addAction(openAct);
@@ -43,64 +50,112 @@ MainWindow::MainWindow(QWidget *parent)
     connect(exportJsonAct, &QAction::triggered, this, &MainWindow::exportJson);
     exportMenu->addAction(exportJsonAct);
     
+    QTabWidget *mainTabWidget = new QTabWidget(this);
+    mainTabWidget->setTabPosition(QTabWidget::North);
+    mainTabWidget->setGeometry(0, 0, 1000, 900);
+    
     QTabWidget *tabWidget = new QTabWidget(this);
     tabWidget->setTabPosition(QTabWidget::North);
-    tabWidget->setGeometry(500, 20, 200, 500);
+    tabWidget->setGeometry(1450, 20, 200, 800);
     //tabWidget->setFixedSize(200, 200);
-
-    QWidget *tab1 = new QWidget();
-    tab1->setFixedSize(200, 200);
     
-    QWidget *tab2 = new QWidget();
-    tab2->setFixedSize(200, 200);
+    QWidget *spriteTab = new QWidget();
+    spriteTab->setFixedSize(1000, 900);
+    
+    scene = new SpriteScene(spriteTab);
+    scene->setMainWindow(this);
+    
+    QWidget *animationTab = new QWidget();
+    animationTab->setFixedSize(1000, 900);
+    
+    AnimationScene *animationScene = new AnimationScene(animationTab);
+
+    QWidget *slicingTab = new QWidget();
+    slicingTab->setFixedSize(200, 800);
+    
+    QWidget *editorTab = new QWidget();
+    editorTab->setFixedSize(200, 800);
     
     // Create layouts for the tabs
-    QVBoxLayout *sliceLayout = new QVBoxLayout(tab1);
-    QVBoxLayout *editorLayout = new QVBoxLayout(tab2);
+    QVBoxLayout *sliceLayout = new QVBoxLayout(slicingTab);
+    QVBoxLayout *editorLayout = new QVBoxLayout(editorTab);
     
-    QHBoxLayout *hLayoutSplit = new QHBoxLayout(tab1);
-    QHBoxLayout *hLayoutExport = new QHBoxLayout(tab1);
+    QHBoxLayout *hLayoutSplit = new QHBoxLayout(slicingTab);
+    QHBoxLayout *hLayoutExport = new QHBoxLayout(slicingTab);
 
     if(areaSlice == nullptr)
-        areaSlice = new QSpinBox(tab1);
+        areaSlice = new QSpinBox(slicingTab);
     
-    QPushButton *sliceButton = new QPushButton("Slice", tab1);
+    QPushButton *sliceButton = new QPushButton("Slice", slicingTab);
     connect(sliceButton, &QPushButton::clicked, this, &MainWindow::sliceButtonAction);
     
-    QPushButton *exportSpriteButton = new QPushButton("Sprites", tab1);
+    QPushButton *exportSpriteButton = new QPushButton("Split Sprites", slicingTab);
     connect(exportSpriteButton, &QPushButton::clicked, this, &MainWindow::saveIndividualImages);
     
-    QPushButton *exportJsonButton = new QPushButton("Json", tab1);
+    QPushButton *exportJsonButton = new QPushButton("Json", slicingTab);
     connect(exportJsonButton, &QPushButton::clicked, this, &MainWindow::exportJson);
     
-    selectButton = new QPushButton("Select Box", tab1);
+    selectButton = new QPushButton("Select Box", slicingTab);
     connect(selectButton, &QPushButton::clicked, this, &MainWindow::enableSelection);
     
-    QPushButton *mergeButton = new QPushButton("Merge", tab1);
+    QPushButton *mergeButton = new QPushButton("Merge", slicingTab);
     connect(mergeButton, &QPushButton::clicked, this, &MainWindow::merge);
     
-    SpriteSelectorTab *selectorTab = new SpriteSelectorTab(tab2);
-    //QPushButton *button2 = new QPushButton("Button in Tab 2", tab2);
-
+    QPushButton *editorButton = new QPushButton("Open Editor", editorTab);
+    connect(editorButton, &QPushButton::clicked, this, &MainWindow::openEditor);
+    
+    hLayoutSplit->addStretch();
     hLayoutSplit->addWidget(areaSlice);
     hLayoutSplit->addWidget(sliceButton);
+    hLayoutSplit->addStretch();
     
+    hLayoutExport->addStretch();
     hLayoutExport->addWidget(exportSpriteButton);
     hLayoutExport->addWidget(exportJsonButton);
+    hLayoutExport->addStretch();
+    
+    QHBoxLayout *hLayoutSelect = new QHBoxLayout(slicingTab);
+    hLayoutSelect->addStretch();
+    hLayoutSelect->addWidget(selectButton);
+    hLayoutSelect->addWidget(mergeButton);
+    hLayoutSelect->addStretch();
+    
+    //QHBoxLayout *hLayoutMerge = new QHBoxLayout(tab1);
+    //hLayoutMerge->addStretch();
+    //hLayoutMerge->addStretch();
     
     sliceLayout->addLayout(hLayoutSplit);
+    sliceLayout->addLayout(hLayoutSelect);
+    //sliceLayout->addLayout(hLayoutMerge);
+    QLabel *exportLabel = new QLabel("Exporting");
+    sliceLayout->addWidget(exportLabel);
     sliceLayout->addLayout(hLayoutExport);
-    sliceLayout->addWidget(selectButton);
-    sliceLayout->addWidget(mergeButton);
+    sliceLayout->addStretch();
     
-    editorLayout->addWidget(selectorTab);
+    editorLayout->addWidget(editorButton);
+    editorLayout->addStretch();
     
-    tabWidget->addTab(tab1, "Slicing");
-    tabWidget->addTab(tab2, "Editor");
+    mainTabWidget->addTab(spriteTab, "Sprite");
+    mainTabWidget->addTab(animationTab, "Animation");
+    
+    tabWidget->addTab(slicingTab, "Slicing");
+    tabWidget->addTab(editorTab, "Editor");
+}
+
+void MainWindow::openEditor() {
+    selectorTab = new SpriteSelectorTab();
+    selectorTab->show();
+    
+    selectorTab->setRect(scene->getRect());
+    selectorTab->setSprites(scene->getSprites());
 }
 
 void MainWindow::merge() {
-    ui->image->mergeRect();
+    scene->mergeRect();
+    
+    selectorTab->setRect(scene->getRect());
+    selectorTab->setSprites(scene->getSprites());
+    selectorTab->update();
 }
 
 void MainWindow::enableSelection() {
@@ -115,7 +170,11 @@ void MainWindow::enableSelection() {
     }
 }
 
-void MainWindow::open()
+void MainWindow::save()
+{
+}
+
+void MainWindow::openImage()
 {
     filename = QFileDialog::getOpenFileName(this,
                                                  tr("Open Image"), "/", tr("Image Files (*.png *.jpg *.bmp)"));
@@ -137,20 +196,26 @@ void MainWindow::open()
     auto minHeight = std::min(spritesheet.height(), 1080);
     auto smallImage = spritesheet.scaledToHeight(minHeight);
     
-    ui->image->setPixmap(QPixmap::fromImage(smallImage));
-    ui->image->adjustSize();
+    scene->setPixmap(QPixmap::fromImage(smallImage));
+    scene->adjustSize();
 }
 
 void MainWindow::sliceButtonAction() {
-    ui->image->getRect().clear();
-    ui->image->getSprites().clear();
+    scene->getRect().clear();
+    scene->getSprites().clear();
     
     splitSpriteSheet(areaSlice->value());
-    ui->image->update();
+    scene->update();
+    
+    if(selectorTab) {
+        selectorTab->setRect(scene->getRect());
+        selectorTab->setSprites(scene->getSprites());
+        selectorTab->update();
+    }
 }
 
 void MainWindow::saveIndividualImages() {
-    if (ui->image->getSprites().size() == 0) {
+    if (scene->getSprites().size() == 0) {
         std::cerr << "Error: there are no sprites." << std::endl;
         QMessageBox::warning(nullptr, tr("Error"), tr("Error: there are no sprites."));
         return -1;
@@ -160,7 +225,7 @@ void MainWindow::saveIndividualImages() {
     
     int spriteIndex = 0;
     
-    for (const cv::Mat& spr : ui->image->getSprites()) {
+    for (const cv::Mat& spr : scene->getSprites()) {
         std::string filename2 = dir.toStdString() + "sprite" + std::to_string(spriteIndex++) + ".png";
         cv::imwrite(filename2, spr);
     }
@@ -173,13 +238,15 @@ void MainWindow::splitSpriteSheet(int area) {
         return -1;
     }
     
-    cv::Mat spritesheet = cv::imread(filename.toStdString());
-
+    spritesheet = cv::imread(filename.toStdString());
+    
     if (spritesheet.empty()) {
         std::cerr << "Error: Could not load spritesheet image." << std::endl;
         QMessageBox::warning(nullptr, tr("Error"), tr("Error: Could not load spritesheet image."));
         return -1;
     }
+    
+    scene->setSpritesheet(spritesheet);
     
     //QString dir = QFileDialog::getExistingDirectory(this, "Save directory", "/");
     
@@ -215,12 +282,12 @@ void MainWindow::splitSpriteSheet(int area) {
         }
     }
     
-    ui->image->setRect(rect);
-    ui->image->setSprites(individualSprites);
+    scene->setRect(rect);
+    scene->setSprites(individualSprites);
 }
 
 void MainWindow::exportJson() {
-    if (ui->image->getRect().empty()) {
+    if (scene->getRect().empty()) {
         std::cerr << "Error: Could not find the bounding boxes." << std::endl;
         QMessageBox::warning(nullptr, tr("Error"), tr("Error: Could not find the bounding boxes."));
         return -1;
@@ -230,12 +297,12 @@ void MainWindow::exportJson() {
     
     QJsonObject root;
     
-    for(int i = 0; i < ui->image->getRect().size(); i++) {
+    for(int i = 0; i < scene->getRect().size(); i++) {
         QJsonArray rect;
-        rect.push_back(ui->image->getRect()[i].x);
-        rect.push_back(ui->image->getRect()[i].y);
-        rect.push_back(ui->image->getRect()[i].width);
-        rect.push_back(ui->image->getRect()[i].height);
+        rect.push_back(scene->getRect()[i].x);
+        rect.push_back(scene->getRect()[i].y);
+        rect.push_back(scene->getRect()[i].width);
+        rect.push_back(scene->getRect()[i].height);
         std::string id = "spr" + std::to_string(i);
     
         root[id.c_str()] = rect;

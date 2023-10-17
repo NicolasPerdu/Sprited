@@ -9,6 +9,10 @@ QT_END_NAMESPACE
 
 class QSpinBox;
 class QPushButton;
+class SpriteSelectorTab;
+class SpriteScene; 
+
+#include <opencv2/opencv.hpp>
 
 class MainWindow : public QMainWindow
 {
@@ -22,7 +26,9 @@ public:
     ~MainWindow();
 
 public slots:
-    void open();
+    void save();
+    void openImage();
+    void openEditor();
     void saveIndividualImages();
     void splitSpriteSheet(int area);
     void sliceButtonAction();
@@ -37,5 +43,8 @@ private:
     bool selectEnabled = false;
     QPushButton *selectButton = nullptr;
     Ui::MainWindow *ui;
+    SpriteScene *scene = nullptr;
+    SpriteSelectorTab *selectorTab = nullptr;
+    cv::Mat spritesheet;
 };
 #endif // MAINWINDOW_H
