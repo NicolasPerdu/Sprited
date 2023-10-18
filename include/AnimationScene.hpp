@@ -34,6 +34,8 @@ public:
         this->sprites = sprites;
     }
     
+    std::vector<std::pair<int, int>> getTable();
+    
     
 protected:
     //void mousePressEvent(QMouseEvent *ev);

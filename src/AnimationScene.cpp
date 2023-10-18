@@ -22,4 +22,35 @@ AnimationScene::AnimationScene(QWidget* parent) : QWidget(parent) {
     setLayout(layout);
 }
 
+std::vector<std::pair<int, int>> AnimationScene::getTable() {
+    std::vector<std::pair<int, int>> res;
+    res.reserve(table->size().height());
+    
+    for(int i = 0; i < table->size().height(); i++) {
+        std::string str1 = table->item(i, 0)->text().toStdString();
+        int val1 = 0;
+        
+        try {
+            val1 = std::stoi(str1.c_str());
+        } catch(std::exception const & e)
+        {
+             //cout<<"error : " << e.what() <<endl;
+        }
+        
+        std::string str2 = table->item(i, 1)->text().toStdString();
+        int val2 = 0;
+        
+        try {
+            val2 = std::stoi(str2.c_str());
+        } catch(std::exception const & e)
+        {
+             //cout<<"error : " << e.what() <<endl;
+        }
+        
+        res.push_back(std::pair<int, int>{val1, val2});
+    }
+    
+    return res;
+}
+
 

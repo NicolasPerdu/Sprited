@@ -28,15 +28,15 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     setWindowTitle("Sprited");
     
-    QAction *openAct = new QAction(tr("&Open Image..."), this);
+    QAction *openAct = new QAction(tr("&Open..."), this);
     openAct->setShortcuts(QKeySequence::Open);
     openAct->setStatusTip(tr("Open an existing file"));
-    connect(openAct, &QAction::triggered, this, &MainWindow::openImage);
+    connect(openAct, &QAction::triggered, this, &MainWindow::open);
 
     QAction *saveAct = new QAction(tr("&Save..."), this);
     saveAct->setShortcuts(QKeySequence::Save);
     openAct->setStatusTip(tr("Save an existing project"));
-    connect(saveAct, &QAction::triggered, this, &MainWindow::save);
+    connect(saveAct, &QAction::triggered, this, &MainWindow::saveProject);
 
     auto fileMenu = menuBar()->addMenu(tr("&File"));
     fileMenu->addAction(openAct);
@@ -68,7 +68,7 @@ MainWindow::MainWindow(QWidget *parent)
     QWidget *animationTab = new QWidget();
     animationTab->setFixedSize(1000, 900);
     
-    AnimationScene *animationScene = new AnimationScene(animationTab);
+    animationScene = new AnimationScene(animationTab);
 
     QWidget *slicingTab = new QWidget();
     slicingTab->setFixedSize(200, 800);
@@ -170,14 +170,70 @@ void MainWindow::enableSelection() {
     }
 }
 
-void MainWindow::save()
+void MainWindow::saveProject()
 {
+    filenameProject = QFileDialog::getOpenFileName(this,
+                                                 tr("Save Project"), "/", tr("Project Files (*.json)"));
+    
+    QJsonObject root;
+    
+    if(filename.size() > 0) {
+        QDir dir(filenameProject);
+        QJsonValue val(dir.relativeFilePath(filename));
+        root["spritesheet"] = val;
+        
+        auto rectA = scene->getRect();
+        
+        if(rectA.size() > 0) {
+            QJsonArray rectG;
+            
+            for(int i = 0; i < rectA.size(); i++) {
+                QJsonArray rect;
+                rect.push_back(rectA[i].x);
+                rect.push_back(rectA[i].y);
+                rect.push_back(rectA[i].width);
+                rect.push_back(rectA[i].height);
+            
+                rectG.push_back(rect);
+            }
+            
+            root["rect"] = rectG;
+        }
+        
+        
+        auto table = animationScene->getTable();
+        
+        if(table.size() > 0) {
+            QJsonArray animG;
+            
+            for(int i = 0; i < table.size(); i++) {
+                QJsonArray anim;
+                anim.push_back(table[i].first);
+                anim.push_back(table[i].second);
+                animG.push_back(anim);
+            }
+            
+            root["anim"] = animG;
+        }
+        
+    }
+    
+    saveJson(root, filenameProject);
+    
 }
 
-void MainWindow::openImage()
+void MainWindow::open()
 {
-    filename = QFileDialog::getOpenFileName(this,
-                                                 tr("Open Image"), "/", tr("Image Files (*.png *.jpg *.bmp)"));
+    QFileDialog dialog(this, tr("Open"));
+    dialog.setFileMode(QFileDialog::AnyFile);
+    dialog.setViewMode(QFileDialog::Detail);
+    
+    QStringList fileNames;
+    if (dialog.exec())
+        fileNames = dialog.selectedFiles();
+    
+    //filename = QFileDialog::getOpenFileName(this, tr("Open"), "/", tr("Files (*)"));
+    
     QImageReader reader(filename);
     reader.setAutoTransform(true);
 
@@ -286,6 +342,14 @@ void MainWindow::splitSpriteSheet(int area) {
     scene->setSprites(individualSprites);
 }
 
+void MainWindow::saveJson(QJsonObject root, QString filenameJson) {
+    QByteArray ba = QJsonDocument(root).toJson();
+
+    QFile fout(filenameJson);
+    fout.open(QIODevice::WriteOnly);
+    fout.write(ba);
+}
+
 void MainWindow::exportJson() {
     if (scene->getRect().empty()) {
         std::cerr << "Error: Could not find the bounding boxes." << std::endl;
@@ -308,11 +372,7 @@ void MainWindow::exportJson() {
         root[id.c_str()] = rect;
     }
     
-    QByteArray ba = QJsonDocument(root).toJson();
-
-    QFile fout(dir + "/spr.json");
-    fout.open(QIODevice::WriteOnly);
-    fout.write(ba);
+    saveJson(root, dir + "/spr.json");
 }
 
 /*void MainWindow::floodFill(QImage &image, QImage &binary, int x, int y, int label) {
