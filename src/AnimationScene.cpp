@@ -22,11 +22,18 @@ AnimationScene::AnimationScene(QWidget* parent) : QWidget(parent) {
     setLayout(layout);
 }
 
+void AnimationScene::setTable(std::vector<std::pair<int, int>>& table) {
+    
+}
+
 std::vector<std::pair<int, int>> AnimationScene::getTable() {
     std::vector<std::pair<int, int>> res;
     res.reserve(table->size().height());
     
     for(int i = 0; i < table->size().height(); i++) {
+        if(table->item(i, 1) == nullptr)
+            continue;
+        
         std::string str1 = table->item(i, 0)->text().toStdString();
         int val1 = 0;
         

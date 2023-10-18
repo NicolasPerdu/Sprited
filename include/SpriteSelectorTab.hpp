@@ -39,8 +39,6 @@ public:
         this->sprites = sprites;
     }
     
-    QImage MatToQImage(const cv::Mat& mat);
-    
 protected:
     //void mousePressEvent(QMouseEvent *ev);
     void paintEvent(QPaintEvent* event);

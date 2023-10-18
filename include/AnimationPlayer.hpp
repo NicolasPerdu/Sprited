@@ -12,6 +12,7 @@
 #include <QLabel>
 
 class MainWindow;
+class QTimer;
 
 class AnimationPlayer : public QLabel {
 public:
@@ -29,8 +30,12 @@ protected:
     void paintEvent(QPaintEvent* event);
     
 private:
+    void animate();
     MainWindow *win = nullptr;
     bool playing = false;
+    QTimer *timer = nullptr;
+    int currentFrame = 0;
+    int currentNumFrame = 0;
 };
 
 #endif /* AnimationPlayer_hpp */

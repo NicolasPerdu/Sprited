@@ -10,9 +10,10 @@ QT_END_NAMESPACE
 class QSpinBox;
 class QPushButton;
 class SpriteSelectorTab;
-class SpriteScene;
-class AnimationScene;
 
+#include "include/SpriteScene.hpp"
+#include "include/AnimationScene.hpp"
+#include "include/AnimationPlayer.hpp"
 #include <opencv2/opencv.hpp>
 
 class MainWindow : public QMainWindow
@@ -25,6 +26,14 @@ public:
     MainWindow(QWidget *parent = nullptr);
     bool isSelectEnabled() { return selectEnabled; }
     ~MainWindow();
+    
+    SpriteScene* getSpriteScene() {
+        return scene;
+    }
+    
+    AnimationScene* getAnimationScene() {
+        return animationScene;
+    }
 
 public slots:
     void saveProject();
@@ -38,7 +47,9 @@ public slots:
     void merge();
 
 private:
+    void loadJsonProject();
     void saveJson(QJsonObject root, QString filenameJson);
+    void loadImage(); 
     
     QSpinBox *areaSlice = nullptr;
     QString filename, filenameProject;
@@ -49,6 +60,7 @@ private:
     SpriteScene *scene = nullptr;
     SpriteSelectorTab *selectorTab = nullptr;
     AnimationScene *animationScene = nullptr;
+    AnimationPlayer *playerScene = nullptr;
     cv::Mat spritesheet;
 };
 #endif // MAINWINDOW_H

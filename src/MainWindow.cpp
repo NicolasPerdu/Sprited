@@ -1,6 +1,5 @@
 #include "include/MainWindow.hpp"
 #include "include/SpriteSelectorTab.hpp"
-#include "include/SpriteScene.hpp"
 #include "include/AnimationScene.hpp"
 
 #include "ui_MainWindow.h"
@@ -40,15 +39,16 @@ MainWindow::MainWindow(QWidget *parent)
 
     auto fileMenu = menuBar()->addMenu(tr("&File"));
     fileMenu->addAction(openAct);
+    fileMenu->addAction(saveAct);
     //auto submenu = fileMenu->addMenu("Submenu");
     //submenu->addAction(new QAction("action1"));
     //submenu->addAction(new QAction("action2"));
     
-    auto exportMenu = menuBar()->addMenu(tr("&Export"));
+    /*auto exportMenu = menuBar()->addMenu(tr("&Export"));
     QAction *exportJsonAct = new QAction(tr("&Export JSON..."), this);
     exportJsonAct->setStatusTip(tr("Export an json file"));
     connect(exportJsonAct, &QAction::triggered, this, &MainWindow::exportJson);
-    exportMenu->addAction(exportJsonAct);
+    exportMenu->addAction(exportJsonAct);*/
     
     QTabWidget *mainTabWidget = new QTabWidget(this);
     mainTabWidget->setTabPosition(QTabWidget::North);
@@ -68,7 +68,12 @@ MainWindow::MainWindow(QWidget *parent)
     QWidget *animationTab = new QWidget();
     animationTab->setFixedSize(1000, 900);
     
+    QWidget *playerTab = new QWidget();
+    playerTab->setFixedSize(1000, 900);
+    
     animationScene = new AnimationScene(animationTab);
+    playerScene = new AnimationPlayer(playerTab);
+    playerScene->setMainWindow(this);
 
     QWidget *slicingTab = new QWidget();
     slicingTab->setFixedSize(200, 800);
@@ -137,6 +142,7 @@ MainWindow::MainWindow(QWidget *parent)
     
     mainTabWidget->addTab(spriteTab, "Sprite");
     mainTabWidget->addTab(animationTab, "Animation");
+    mainTabWidget->addTab(playerTab, "Player");
     
     tabWidget->addTab(slicingTab, "Slicing");
     tabWidget->addTab(editorTab, "Editor");
@@ -172,14 +178,25 @@ void MainWindow::enableSelection() {
 
 void MainWindow::saveProject()
 {
-    filenameProject = QFileDialog::getOpenFileName(this,
-                                                 tr("Save Project"), "/", tr("Project Files (*.json)"));
+    filenameProject = QFileDialog::getSaveFileName(this, "Save Project", QDir::homePath(), "Json Files (*.json)");
     
     QJsonObject root;
     
     if(filename.size() > 0) {
-        QDir dir(filenameProject);
-        QJsonValue val(dir.relativeFilePath(filename));
+        QFileInfo fileInfoProj(filenameProject);
+        QFileInfo fileInfo(filename);
+        QDir dir(fileInfoProj.dir().path());
+        //std::cout << "file project : " << filenameProject.toStdString() << std::endl;
+        //std::cout << "file : " << filename.toStdString() << std::endl;
+        QString rel = dir.relativeFilePath(fileInfo.dir().path());
+        
+        QJsonValue val;
+        
+        if(rel == ".")
+            val = fileInfo.fileName();
+        else
+            val = rel + "/" + fileInfo.fileName();
+       
         root["spritesheet"] = val;
         
         auto rectA = scene->getRect();
@@ -222,18 +239,73 @@ void MainWindow::saveProject()
     
 }
 
-void MainWindow::open()
-{
-    QFileDialog dialog(this, tr("Open"));
-    dialog.setFileMode(QFileDialog::AnyFile);
-    dialog.setViewMode(QFileDialog::Detail);
+void MainWindow::loadJsonProject() {
     
-    QStringList fileNames;
-    if (dialog.exec())
-        fileNames = dialog.selectedFiles();
-    
-    //filename = QFileDialog::getOpenFileName(this, tr("Open"), "/", tr("Files (*)"));
-    
+    QFileInfo fileInfo(filenameProject);
+    QFile jsonFile(filenameProject);
+
+    if (!jsonFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning() << "Failed to open the JSON file.";
+        return 1;
+    }
+
+    QByteArray jsonData = jsonFile.readAll();
+    jsonFile.close();
+
+    QJsonParseError parseError;
+    QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData, &parseError);
+
+    if (parseError.error != QJsonParseError::NoError) {
+        qWarning() << "Failed to parse JSON:" << parseError.errorString();
+        return 1;
+    }
+
+    if (jsonDoc.isObject()) {
+        QJsonObject jsonObj = jsonDoc.object();
+
+        filename = fileInfo.dir().path() + "/" + jsonObj["spritesheet"].toString();
+        loadImage();
+        
+        spritesheet = cv::imread(filename.toStdString());
+        scene->setSpritesheet(spritesheet);
+        
+        if(jsonObj.contains("rect")) {
+            QJsonArray rectA = jsonObj["rect"].toArray();
+            
+            std::vector<cv::Rect> rects;
+            rects.reserve(rectA.size());
+            
+            for(int i = 0; i < rectA.size(); i++) {
+                QJsonArray rect = rectA[i].toArray();
+                //std::cout << rect[0].toInt() << "," << rect[1].toInt() << "," << rect[2].toInt() << "," << rect[3].toInt() << std::endl;
+                rects.push_back(cv::Rect{rect[0].toInt(), rect[1].toInt(), rect[2].toInt(), rect[3].toInt()});
+            }
+            
+            scene->setRect(rects);
+            scene->update();
+        }
+        
+        if(jsonObj.contains("anim")) {
+            QJsonArray sprA = jsonObj["anim"].toArray();
+            
+            std::vector<std::pair<int, int>> anims;
+            anims.reserve(sprA.size());
+            
+            for(int i = 0; i < sprA.size(); i++) {
+                QJsonArray spr = sprA[i].toArray();
+                anims.push_back({sprA[0].toInt(), sprA[1].toInt()});
+            }
+            
+            animationScene->setTable(anims);
+        }
+
+    } else {
+        qWarning() << "JSON document is not an object.";
+        return 1;
+    }
+}
+
+void MainWindow::loadImage() {
     QImageReader reader(filename);
     reader.setAutoTransform(true);
 
@@ -254,6 +326,33 @@ void MainWindow::open()
     
     scene->setPixmap(QPixmap::fromImage(smallImage));
     scene->adjustSize();
+}
+
+void MainWindow::open()
+{
+    QFileDialog dialog(this, tr("Open"));
+    dialog.setFileMode(QFileDialog::AnyFile);
+    dialog.setViewMode(QFileDialog::Detail);
+    
+    QStringList fileNames;
+    
+    if (dialog.exec())
+        fileNames = dialog.selectedFiles();
+    
+    QFileInfo fileInfo(fileNames[0]);
+    
+    std::cout << "ext : " << fileInfo.suffix().toStdString() << std::endl;
+    
+    if(fileInfo.suffix() == "json") {
+        filenameProject = fileNames[0];
+        loadJsonProject();
+    } else {
+        filename = fileNames[0];
+        loadImage();
+    }
+
+    //filename = QFileDialog::getOpenFileName(this, tr("Open"), "/", tr("Files (*)"));
+  
 }
 
 void MainWindow::sliceButtonAction() {

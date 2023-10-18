@@ -6,47 +6,9 @@
 //
 
 #include "../include/SpriteSelectorTab.hpp"
+#include "../include/Utils.hpp"
 #include <QImage>
 #include <opencv2/opencv.hpp>
-
-QImage SpriteSelectorTab::MatToQImage(const cv::Mat& mat)
-{
-    // Check if the input Mat is empty
-    if (mat.empty())
-    {
-        return QImage();
-    }
-
-    // Determine the format of the QImage based on the Mat's number of channels
-    QImage::Format format;
-    if (mat.channels() == 1)
-    {
-        format = QImage::Format_Grayscale8;
-    }
-    else if (mat.channels() == 3)
-    {
-        format = QImage::Format_RGB888;
-    }
-    else if (mat.channels() == 4)
-    {
-        format = QImage::Format_ARGB32;
-    }
-    else
-    {
-        return QImage(); // Unsupported format
-    }
-
-    // Create a QImage from the Mat data
-    QImage image((uchar *) mat.data, mat.cols, mat.rows, static_cast<qsizetype >(mat.step), format);
-
-    // If the Mat is stored as BGR, convert it to RGB format
-    if (mat.channels() == 3 && mat.type() == CV_8UC3)
-    {
-        image = image.rgbSwapped();
-    }
-
-    return image;
-}
 
 void SpriteSelectorTab::paintEvent(QPaintEvent* event) {
     QPainter painter(this);
@@ -61,7 +23,7 @@ void SpriteSelectorTab::paintEvent(QPaintEvent* event) {
     
     for(int i = 0; i < rect.size(); i++) {
         std::cout << "pos: " << x << ", " << y << ", " << maxH << std::endl; 
-        painter.drawImage(QPoint(x, y), MatToQImage(sprites[i]));
+        painter.drawImage(QPoint(x, y), toQImage(sprites[i]));
         x = x + rect[i].width;
         maxH = std::max(maxH, rect[i].height);
         

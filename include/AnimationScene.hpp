@@ -35,6 +35,7 @@ public:
     }
     
     std::vector<std::pair<int, int>> getTable();
+    void setTable(std::vector<std::pair<int, int>>& table);
     
     
 protected:
