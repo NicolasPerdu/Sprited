@@ -22,8 +22,18 @@ AnimationScene::AnimationScene(QWidget* parent) : QWidget(parent) {
     setLayout(layout);
 }
 
-void AnimationScene::setTable(std::vector<std::pair<int, int>>& table) {
+void AnimationScene::setTable(std::vector<std::pair<int, int>>& tableIn) {
+    table->setRowCount(100);
+    table->setColumnCount(2);
     
+    for(int i = 0; i < tableIn.size(); i++) {
+        std::cout << "pair : " << tableIn[i].first << ", " << tableIn[i].second << std::endl;
+        
+        table->setItem(i, 0, new QTableWidgetItem(QString::number(tableIn[i].first)));
+        table->setItem(i, 1, new QTableWidgetItem(QString::number(tableIn[i].second)));
+    }
+    
+    update();
 }
 
 std::vector<std::pair<int, int>> AnimationScene::getTable() {

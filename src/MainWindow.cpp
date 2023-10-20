@@ -149,9 +149,13 @@ MainWindow::MainWindow(QWidget *parent)
 }
 
 void MainWindow::openEditor() {
-    selectorTab = new SpriteSelectorTab();
+    if(selectorTab == nullptr) {
+        selectorTab = new SpriteSelectorTab();
+    }
+    
     selectorTab->show();
     
+    selectorTab->setSpritesheet(spritesheet);
     selectorTab->setRect(scene->getRect());
     selectorTab->setSprites(scene->getSprites());
 }
@@ -159,6 +163,11 @@ void MainWindow::openEditor() {
 void MainWindow::merge() {
     scene->mergeRect();
     
+    if(selectorTab == nullptr) {
+        selectorTab = new SpriteSelectorTab();
+    }
+    
+    selectorTab->setSpritesheet(spritesheet);
     selectorTab->setRect(scene->getRect());
     selectorTab->setSprites(scene->getSprites());
     selectorTab->update();
@@ -275,13 +284,20 @@ void MainWindow::loadJsonProject() {
             std::vector<cv::Rect> rects;
             rects.reserve(rectA.size());
             
+            std::vector<cv::Mat> sprites;
+            sprites.reserve(rectA.size());
+            
             for(int i = 0; i < rectA.size(); i++) {
                 QJsonArray rect = rectA[i].toArray();
                 //std::cout << rect[0].toInt() << "," << rect[1].toInt() << "," << rect[2].toInt() << "," << rect[3].toInt() << std::endl;
-                rects.push_back(cv::Rect{rect[0].toInt(), rect[1].toInt(), rect[2].toInt(), rect[3].toInt()});
+                cv::Rect r{rect[0].toInt(), rect[1].toInt(), rect[2].toInt(), rect[3].toInt()};
+                rects.push_back(r);
+            
+                sprites.push_back(spritesheet(r).clone());
             }
             
             scene->setRect(rects);
+            scene->setSprites(sprites);
             scene->update();
         }
         
@@ -293,7 +309,7 @@ void MainWindow::loadJsonProject() {
             
             for(int i = 0; i < sprA.size(); i++) {
                 QJsonArray spr = sprA[i].toArray();
-                anims.push_back({sprA[0].toInt(), sprA[1].toInt()});
+                anims.push_back({spr[0].toInt(), spr[1].toInt()});
             }
             
             animationScene->setTable(anims);
@@ -362,11 +378,14 @@ void MainWindow::sliceButtonAction() {
     splitSpriteSheet(areaSlice->value());
     scene->update();
     
-    if(selectorTab) {
-        selectorTab->setRect(scene->getRect());
-        selectorTab->setSprites(scene->getSprites());
-        selectorTab->update();
+    if(selectorTab == nullptr) {
+        selectorTab = new SpriteSelectorTab();
     }
+    
+    selectorTab->setSpritesheet(spritesheet);
+    selectorTab->setRect(scene->getRect());
+    selectorTab->setSprites(scene->getSprites());
+    selectorTab->update();
 }
 
 void MainWindow::saveIndividualImages() {

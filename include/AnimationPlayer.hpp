@@ -25,17 +25,21 @@ public:
 public slots:
     void playButtonAction();
     void stopButtonAction();
+    void topLeftAnchorButtonAction();
+    void centerAnchorButtonAction();
     
 protected:
     void paintEvent(QPaintEvent* event);
     
 private:
     void animate();
+    QPoint computeCenter(); 
     MainWindow *win = nullptr;
     bool playing = false;
     QTimer *timer = nullptr;
     int currentFrame = 0;
     int currentNumFrame = 0;
+    bool centerAnchor = false;
 };
 
 #endif /* AnimationPlayer_hpp */

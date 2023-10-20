@@ -39,6 +39,9 @@ public:
         this->sprites = sprites;
     }
     
+    void setSpritesheet(cv::Mat &spritesheet) {
+        this->spritesheet = spritesheet;
+    }
 protected:
     //void mousePressEvent(QMouseEvent *ev);
     void paintEvent(QPaintEvent* event);
@@ -46,6 +49,7 @@ protected:
 private:
     std::vector<cv::Rect> rect;
     std::vector<cv::Mat> sprites;
+    cv::Mat spritesheet;
 };
 
 #endif /* SpriteSelectorTab_hpp */

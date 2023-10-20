@@ -13,7 +13,7 @@
 void SpriteSelectorTab::paintEvent(QPaintEvent* event) {
     QPainter painter(this);
     
-    //painter.setPen(QPen(Qt::black, 1));
+    painter.setPen(QPen(Qt::red, 1));
     //painter.setBrush(QBrush(Qt::blue));
     
     // normal rectangle
@@ -21,11 +21,24 @@ void SpriteSelectorTab::paintEvent(QPaintEvent* event) {
     int y = 0;
     int maxH = 0;
     
+    std::vector<std::pair<int, int>> pairs;
+    pairs.reserve(rect.size());
+    
     for(int i = 0; i < rect.size(); i++) {
-        std::cout << "pos: " << x << ", " << y << ", " << maxH << std::endl; 
-        painter.drawImage(QPoint(x, y), toQImage(sprites[i]));
-        x = x + rect[i].width;
-        maxH = std::max(maxH, rect[i].height);
+        pairs.push_back(std::make_pair(rect[i].y*spritesheet.cols + rect[i].x, i));
+    }
+    
+    std::sort(pairs.begin(), pairs.end(), [](const auto& a, const auto& b) {
+        return a.first < b.first;
+    });
+    
+    for(int i = 0; i < pairs.size(); i++) {
+        //std::cout << "pos: " << x << ", " << y << ", " << maxH << std::endl;
+        int index = pairs[i].second;
+        painter.drawImage(QPoint(x, y), toQImage(sprites[index]));
+        painter.drawText(x+5, y+10, QString::number(i));
+        x = x + rect[index].width;
+        maxH = std::max(maxH, rect[index].height);
         
         if(x > this->size().width()) {
             x = 0;
