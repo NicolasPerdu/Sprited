@@ -39,6 +39,7 @@ public slots:
     void saveProject();
     void open();
     void openEditor();
+    void importSprites();
     void saveIndividualImages();
     void splitSpriteSheet(int area);
     void sliceButtonAction();

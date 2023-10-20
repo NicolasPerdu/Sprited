@@ -1,6 +1,8 @@
 #include "include/MainWindow.hpp"
 #include "include/SpriteSelectorTab.hpp"
 #include "include/AnimationScene.hpp"
+#include "include/GuillotineBinPack.hpp"
+#include "include/Utils.hpp"
 
 #include "ui_MainWindow.h"
 
@@ -34,12 +36,18 @@ MainWindow::MainWindow(QWidget *parent)
 
     QAction *saveAct = new QAction(tr("&Save..."), this);
     saveAct->setShortcuts(QKeySequence::Save);
-    openAct->setStatusTip(tr("Save an existing project"));
+    saveAct->setStatusTip(tr("Save an existing project"));
     connect(saveAct, &QAction::triggered, this, &MainWindow::saveProject);
+    
+    QAction *importAct = new QAction(tr("&Import Sprites..."), this);
+    importAct->setShortcuts(QKeySequence::Italic);
+    importAct->setStatusTip(tr("Import individual sprites"));
+    connect(importAct, &QAction::triggered, this, &MainWindow::importSprites);
 
     auto fileMenu = menuBar()->addMenu(tr("&File"));
     fileMenu->addAction(openAct);
     fileMenu->addAction(saveAct);
+    fileMenu->addAction(importAct);
     //auto submenu = fileMenu->addMenu("Submenu");
     //submenu->addAction(new QAction("action1"));
     //submenu->addAction(new QAction("action2"));
@@ -183,6 +191,119 @@ void MainWindow::enableSelection() {
         selectButton->setStyleSheet("");
         //mergeButton->update();
     }
+}
+
+void MainWindow::importSprites()
+{
+    QString directoryPath = QFileDialog::getExistingDirectory(this, "Select a Directory", QDir::homePath(), QFileDialog::ShowDirsOnly);
+    
+    QDir directory(directoryPath);
+    directory.setFilter(QDir::Files | QDir::NoDotAndDotDot);
+
+    QStringList fileList = directory.entryList();
+    
+    std::vector<std::pair<int, int>> rects;
+    std::vector<cv::Mat> images;
+    
+    foreach (QString file, fileList) {
+        //QFileInfo fileInfo(directory, file);
+        std::cout << "open the file : " << (directoryPath.toStdString() + "/" + file.toStdString()) << std::endl;
+        auto img = cv::imread(directoryPath.toStdString() + "/" + file.toStdString());
+        rects.push_back(std::make_pair(img.cols, img.rows));
+        images.push_back(img);
+        //
+    }
+    
+    int sizePack = 2;
+    bool sucess = false;
+    rbp::GuillotineBinPack bp;
+    std::vector<cv::Mat> temp = images;
+    
+    while(!sucess) {
+        sucess = true;
+        bp.Init(sizePack, sizePack);
+        
+        for (int i = 0; i < rects.size(); i++) {
+            auto r = bp.Insert(rects[i].first, rects[i].second, false, rbp::GuillotineBinPack::RectBestShortSideFit, rbp::GuillotineBinPack::GuillotineSplitHeuristic::SplitMinimizeArea);
+            
+            if(r.height > 0 && rects[i].first == r.height) {
+                cv::Mat rotatedImage;
+                cv::transpose(temp[i], rotatedImage);
+                cv::flip(rotatedImage, rotatedImage, 1);
+                temp[i] = rotatedImage;
+            }
+            
+            if (r.height == 0) {
+                sucess = false;
+                sizePack = sizePack*2;
+                temp = images;
+                break;
+            }
+        }
+    }
+    
+    images = temp;
+    
+    /*if(bp.Occupancy() < 50) {
+        sizePack = sizePack/2;
+        rbp::GuillotineBinPack bp2;
+        int heur = 1;
+        int tries = 0;
+        
+        while(!sucess && tries < 5) {
+            sucess = true;
+            bp2.Init(sizePack, sizePack);
+            
+            for (int i = 0; i < rects.size(); i++) {
+                auto h = static_cast<rbp::GuillotineBinPack::FreeRectChoiceHeuristic>(heur);
+                auto r = bp.Insert(rects[i].first, rects[i].second, false, h, rbp::GuillotineBinPack::GuillotineSplitHeuristic::SplitShorterLeftoverAxis);
+                if (r.height == 0) {
+                    sucess = false;
+                    tries++;
+                    break;
+                }
+            }
+        }
+        
+        if(sucess) {
+            bp = bp2;
+        }
+    }*/
+    
+    std::cout << "res pack : " << bp.Occupancy() << "% size : " << sizePack << std::endl;
+    spritesheet = cv::Mat(sizePack, sizePack, CV_8UC4, cv::Scalar(0, 0, 0, 0));
+    
+    auto bpr = bp.GetUsedRectangles();
+    
+    for (int i = 0; i < bpr.size(); i++) {
+        cv::Mat img = images[i];
+        
+        if(img.type() == CV_8UC3) {
+            cv::Mat image4Channel(img.rows, img.cols, CV_8UC4);
+
+            for (int y = 0; y < img.rows; y++) {
+                for (int x = 0; x < img.cols; x++) {
+                    cv::Vec3b bgr = img.at<cv::Vec3b>(y, x);
+                    cv::Vec4b bgra(bgr[0], bgr[1], bgr[2], 255);
+                    image4Channel.at<cv::Vec4b>(y, x) = bgra;
+                }
+            }
+            img = image4Channel;
+        }
+        
+        cv::Rect roi(bpr[i].x, bpr[i].y, bpr[i].width, bpr[i].height);
+        //std::cout << "copy img(" << roi.x << ", " << roi.y << ", " << roi.width << ", " << roi.height << ") to (" << spritesheet.cols << ", " << spritesheet.rows << std::endl;
+        img.copyTo(spritesheet(roi));
+    }
+    
+    scene->setSpritesheet(spritesheet);
+    QImage ss = toQImage(spritesheet);
+    
+    auto minHeight = std::min(ss.height(), 1080);
+    auto smallImage = ss.scaledToHeight(minHeight);
+    
+    scene->setPixmap(QPixmap::fromImage(smallImage));
+    scene->adjustSize();
 }
 
 void MainWindow::saveProject()
