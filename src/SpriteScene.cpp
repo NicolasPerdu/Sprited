@@ -20,7 +20,8 @@ void SpriteScene::paintEvent(QPaintEvent* event) {
     
     // normal rectangle
     for(int i = 0; i < rect.size(); i++) {
-        painter.drawRect(rect[i].x, rect[i].y, rect[i].width, rect[i].height);
+        auto r = rect[i].first;
+        painter.drawRect(r.x, r.y, r.width, r.height);
     }
     
     painter.setPen(QPen(Qt::red, 1));
@@ -56,7 +57,7 @@ cv::Rect SpriteScene::mergeRect() {
     
     cv::Rect res{minX.second, minY.second, maxX.second - minX.second, maxY.second - minY.second};
     
-    rect.push_back(res);
+    rect.push_back(std::make_pair(res, false));
     
     cv::Mat sprite = spritesheet(res).clone();
     sprites.push_back(sprite);
@@ -96,9 +97,9 @@ void SpriteScene::mousePressEvent(QMouseEvent *ev) {
     cv::Point mouse{x, y};
     
     for(int i = 0; i < rect.size(); i++) {
-        if(isPointInsideAABB(mouse, rect[i])) {
-            std::cout << "selected rect num " << i << " : " << rect[i].x << ", " << rect[i].y << ", " << rect[i].width << "," << rect[i].height << std::endl;
-            rectSelected.push_back({i, rect[i]});
+        if(isPointInsideAABB(mouse, rect[i].first)) {
+            //std::cout << "selected rect num " << i << " : " << rect[i].x << ", " << rect[i].y << ", " << rect[i].width << "," << rect[i].height << std::endl;
+            rectSelected.push_back({i, rect[i].first});
         }
     }
     

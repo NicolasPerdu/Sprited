@@ -25,7 +25,7 @@ void SpriteSelectorTab::paintEvent(QPaintEvent* event) {
     pairs.reserve(rect.size());
     
     for(int i = 0; i < rect.size(); i++) {
-        pairs.push_back(std::make_pair(rect[i].y*spritesheet.cols + rect[i].x, i));
+        pairs.push_back(std::make_pair(rect[i].first.y*spritesheet.cols + rect[i].first.x, i));
     }
     
     std::sort(pairs.begin(), pairs.end(), [](const auto& a, const auto& b) {
@@ -37,8 +37,8 @@ void SpriteSelectorTab::paintEvent(QPaintEvent* event) {
         int index = pairs[i].second;
         painter.drawImage(QPoint(x, y), toQImage(sprites[index]));
         painter.drawText(x+5, y+10, QString::number(i));
-        x = x + rect[index].width;
-        maxH = std::max(maxH, rect[index].height);
+        x = x + rect[index].first.width;
+        maxH = std::max(maxH, rect[index].first.height);
         
         if(x > this->size().width()) {
             x = 0;

@@ -24,7 +24,7 @@ public:
         this->win = main;
     }
     
-    std::vector<cv::Rect>& getRect() {
+    std::vector<std::pair<cv::Rect, int>>& getRect() {
         return rect;
     }
     
@@ -32,7 +32,7 @@ public:
         return sprites;
     }
     
-    void setRect(std::vector<cv::Rect> &rect) {
+    void setRect(std::vector<std::pair<cv::Rect, int>> &rect) {
         this->rect = rect;
     }
     
@@ -53,7 +53,7 @@ protected:
 private:
     bool isPointInsideAABB(const cv::Point& point, const cv::Rect& box);
     //bool aabb(cv::Rect a, cv::Rect b);
-    std::vector<cv::Rect> rect;
+    std::vector<std::pair<cv::Rect, int>> rect;
     std::vector<std::pair<int, cv::Rect>> rectSelected;
     std::vector<cv::Mat> sprites;
     cv::Mat spritesheet;

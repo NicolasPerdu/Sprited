@@ -202,14 +202,14 @@ void MainWindow::importSprites()
 
     QStringList fileList = directory.entryList();
     
-    std::vector<std::pair<int, int>> rects;
+    std::vector<std::pair<cv::Rect, int>> rects;
     std::vector<cv::Mat> images;
     
     foreach (QString file, fileList) {
         //QFileInfo fileInfo(directory, file);
         std::cout << "open the file : " << (directoryPath.toStdString() + "/" + file.toStdString()) << std::endl;
         auto img = cv::imread(directoryPath.toStdString() + "/" + file.toStdString());
-        rects.push_back(std::make_pair(img.cols, img.rows));
+        rects.push_back(std::make_pair(cv::Rect(0, 0, img.cols, img.rows), false));
         images.push_back(img);
         //
     }
@@ -218,57 +218,37 @@ void MainWindow::importSprites()
     bool sucess = false;
     rbp::GuillotineBinPack bp;
     std::vector<cv::Mat> temp = images;
+    std::vector<std::pair<cv::Rect, int>> temp_rects = rects;
     
     while(!sucess) {
         sucess = true;
         bp.Init(sizePack, sizePack);
         
         for (int i = 0; i < rects.size(); i++) {
-            auto r = bp.Insert(rects[i].first, rects[i].second, false, rbp::GuillotineBinPack::RectBestShortSideFit, rbp::GuillotineBinPack::GuillotineSplitHeuristic::SplitMinimizeArea);
+            auto r = bp.Insert(rects[i].first.width, rects[i].first.height, false, rbp::GuillotineBinPack::RectBestShortSideFit, rbp::GuillotineBinPack::GuillotineSplitHeuristic::SplitMinimizeArea);
             
-            if(r.height > 0 && rects[i].first == r.height) {
+            temp_rects[i].first = cv::Rect(r.x, r.y, r.width, r.height);
+            
+            if(r.height > 0 && rects[i].first.width == r.height) {
                 cv::Mat rotatedImage;
                 cv::transpose(temp[i], rotatedImage);
                 cv::flip(rotatedImage, rotatedImage, 1);
                 temp[i] = rotatedImage;
+                temp_rects[i].second = true;
             }
             
             if (r.height == 0) {
                 sucess = false;
                 sizePack = sizePack*2;
                 temp = images;
+                temp_rects = rects;
                 break;
             }
         }
     }
     
+    rects = temp_rects;
     images = temp;
-    
-    /*if(bp.Occupancy() < 50) {
-        sizePack = sizePack/2;
-        rbp::GuillotineBinPack bp2;
-        int heur = 1;
-        int tries = 0;
-        
-        while(!sucess && tries < 5) {
-            sucess = true;
-            bp2.Init(sizePack, sizePack);
-            
-            for (int i = 0; i < rects.size(); i++) {
-                auto h = static_cast<rbp::GuillotineBinPack::FreeRectChoiceHeuristic>(heur);
-                auto r = bp.Insert(rects[i].first, rects[i].second, false, h, rbp::GuillotineBinPack::GuillotineSplitHeuristic::SplitShorterLeftoverAxis);
-                if (r.height == 0) {
-                    sucess = false;
-                    tries++;
-                    break;
-                }
-            }
-        }
-        
-        if(sucess) {
-            bp = bp2;
-        }
-    }*/
     
     std::cout << "res pack : " << bp.Occupancy() << "% size : " << sizePack << std::endl;
     spritesheet = cv::Mat(sizePack, sizePack, CV_8UC4, cv::Scalar(0, 0, 0, 0));
@@ -288,15 +268,26 @@ void MainWindow::importSprites()
                     image4Channel.at<cv::Vec4b>(y, x) = bgra;
                 }
             }
-            img = image4Channel;
+            images[i] = image4Channel;
         }
         
         cv::Rect roi(bpr[i].x, bpr[i].y, bpr[i].width, bpr[i].height);
         //std::cout << "copy img(" << roi.x << ", " << roi.y << ", " << roi.width << ", " << roi.height << ") to (" << spritesheet.cols << ", " << spritesheet.rows << std::endl;
-        img.copyTo(spritesheet(roi));
+        images[i].copyTo(spritesheet(roi));
     }
     
+    scene->setRect(rects);
+    scene->setSprites(images);
     scene->setSpritesheet(spritesheet);
+    
+    QDir dirSS(directoryPath);
+    dirSS.cdUp();
+    
+    filename = dirSS.path();
+    filename.append("/spritesheet.png");
+    
+    cv::imwrite(filename.toStdString(), spritesheet);
+    
     QImage ss = toQImage(spritesheet);
     
     auto minHeight = std::min(ss.height(), 1080);
@@ -336,10 +327,11 @@ void MainWindow::saveProject()
             
             for(int i = 0; i < rectA.size(); i++) {
                 QJsonArray rect;
-                rect.push_back(rectA[i].x);
-                rect.push_back(rectA[i].y);
-                rect.push_back(rectA[i].width);
-                rect.push_back(rectA[i].height);
+                rect.push_back(rectA[i].first.x);
+                rect.push_back(rectA[i].first.y);
+                rect.push_back(rectA[i].first.width);
+                rect.push_back(rectA[i].first.height);
+                rect.push_back(rectA[i].second);
             
                 rectG.push_back(rect);
             }
@@ -402,7 +394,7 @@ void MainWindow::loadJsonProject() {
         if(jsonObj.contains("rect")) {
             QJsonArray rectA = jsonObj["rect"].toArray();
             
-            std::vector<cv::Rect> rects;
+            std::vector<std::pair<cv::Rect, int>> rects;
             rects.reserve(rectA.size());
             
             std::vector<cv::Mat> sprites;
@@ -412,7 +404,7 @@ void MainWindow::loadJsonProject() {
                 QJsonArray rect = rectA[i].toArray();
                 //std::cout << rect[0].toInt() << "," << rect[1].toInt() << "," << rect[2].toInt() << "," << rect[3].toInt() << std::endl;
                 cv::Rect r{rect[0].toInt(), rect[1].toInt(), rect[2].toInt(), rect[3].toInt()};
-                rects.push_back(r);
+                rects.push_back(std::make_pair(r, rect[4].toInt()));
             
                 sprites.push_back(spritesheet(r).clone());
             }
@@ -561,7 +553,7 @@ void MainWindow::splitSpriteSheet(int area) {
     
     int spriteIndex = 0;
     
-    std::vector<cv::Rect> rect;
+    std::vector<std::pair<cv::Rect, int>> rect;
     rect.reserve(contours.size());
     
     for (const std::vector<cv::Point>& contour : contours) {
@@ -570,7 +562,7 @@ void MainWindow::splitSpriteSheet(int area) {
         cv::Mat sprite = spritesheet(boundingBox).clone();
             
         if (boundingBox.area() > area && (boundingBox.width < binary.cols && boundingBox.height < binary.rows)) {
-            rect.push_back(boundingBox);
+            rect.push_back(std::make_pair(boundingBox, false));
             individualSprites.push_back(sprite);
             //std::string filename = dir.toStdString() + "sprite" + std::to_string(spriteIndex++) + ".png";
             //cv::imwrite(filename, sprite);
@@ -602,10 +594,11 @@ void MainWindow::exportJson() {
     
     for(int i = 0; i < scene->getRect().size(); i++) {
         QJsonArray rect;
-        rect.push_back(scene->getRect()[i].x);
-        rect.push_back(scene->getRect()[i].y);
-        rect.push_back(scene->getRect()[i].width);
-        rect.push_back(scene->getRect()[i].height);
+        rect.push_back(scene->getRect()[i].first.x);
+        rect.push_back(scene->getRect()[i].first.y);
+        rect.push_back(scene->getRect()[i].first.width);
+        rect.push_back(scene->getRect()[i].first.height);
+        rect.push_back(scene->getRect()[i].second);
         std::string id = "spr" + std::to_string(i);
     
         root[id.c_str()] = rect;

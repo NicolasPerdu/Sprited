@@ -23,7 +23,7 @@ public:
         setGeometry(100, 100, 400, 400);
     }
     
-    std::vector<cv::Rect>& getRect() {
+    std::vector<std::pair<cv::Rect, int>>& getRect() {
         return rect;
     }
     
@@ -31,7 +31,7 @@ public:
         return sprites;
     }
     
-    void setRect(std::vector<cv::Rect> &rect) {
+    void setRect(std::vector<std::pair<cv::Rect, int>> &rect) {
         this->rect = rect;
     }
     
@@ -47,7 +47,7 @@ protected:
     void paintEvent(QPaintEvent* event);
     
 private:
-    std::vector<cv::Rect> rect;
+    std::vector<std::pair<cv::Rect, int>> rect;
     std::vector<cv::Mat> sprites;
     cv::Mat spritesheet;
 };
