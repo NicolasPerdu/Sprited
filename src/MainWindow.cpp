@@ -2,6 +2,7 @@
 #include "include/SpriteSelectorTab.hpp"
 #include "include/AnimationScene.hpp"
 #include "include/GuillotineBinPack.hpp"
+#include "include/MaxRectsBinPack.hpp"
 #include "include/Utils.hpp"
 
 #include "ui_MainWindow.h"
@@ -247,13 +248,44 @@ void MainWindow::importSprites()
         }
     }
     
-    rects = temp_rects;
-    images = temp;
+    std::vector<cv::Mat> temp2 = images;
+    std::vector<std::pair<cv::Rect, int>> temp_rects2 = rects;
     
-    std::cout << "res pack : " << bp.Occupancy() << "% size : " << sizePack << std::endl;
+    rbp::MaxRectsBinPack bp2(sizePack, sizePack);
+    bool success2 = true;
+    
+    for (int i = 0; i < rects.size(); i++) {
+        auto r = bp2.Insert(rects[i].first.width, rects[i].first.height, rbp::MaxRectsBinPack::RectBestShortSideFit);
+        
+        temp_rects2[i].first = cv::Rect(r.x, r.y, r.width, r.height);
+        
+        if(r.height > 0 && rects[i].first.width == r.height) {
+            cv::Mat rotatedImage;
+            cv::transpose(temp[i], rotatedImage);
+            cv::flip(rotatedImage, rotatedImage, 1);
+            temp2[i] = rotatedImage;
+            temp_rects2[i].second = true;
+        }
+        
+        if (r.height == 0) {
+            success2 = false;
+            break;
+        }
+    }
+    
+    std::vector<rbp::Rect> bpr;
+    if(success2 && bp2.Occupancy() > bp.Occupancy()) {
+        rects = temp_rects2;
+        images = temp2;
+        bpr = bp2.GetUsedRectangles();
+    } else {
+        rects = temp_rects;
+        images = temp;
+        bpr = bp.GetUsedRectangles();
+    }
+    
+    std::cout << "res pack : " << bp.Occupancy() << ", " <<  bp2.Occupancy() << "% size : " << sizePack << std::endl;
     spritesheet = cv::Mat(sizePack, sizePack, CV_8UC4, cv::Scalar(0, 0, 0, 0));
-    
-    auto bpr = bp.GetUsedRectangles();
     
     for (int i = 0; i < bpr.size(); i++) {
         cv::Mat img = images[i];
