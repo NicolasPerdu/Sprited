@@ -32,13 +32,25 @@ void SpriteSelectorTab::paintEvent(QPaintEvent* event) {
         return a.first < b.first;
     });
     
+    numbers.clear();
+    
     for(int i = 0; i < pairs.size(); i++) {
         //std::cout << "pos: " << x << ", " << y << ", " << maxH << std::endl;
         int index = pairs[i].second;
-        painter.drawImage(QPoint(x, y), toQImage(sprites[index]));
+        cv::Mat img = sprites[index].clone();
+        
+        if(rect[index].second == 1) {
+            cv::transpose(img, img);
+            cv::flip(img, img, 0);
+        }
+        
+        numbers.insert(std::make_pair(i, img));
+        
+        painter.drawImage(QPoint(x, y), toQImage(img));
         painter.drawText(x+5, y+10, QString::number(i));
-        x = x + rect[index].first.width;
-        maxH = std::max(maxH, rect[index].first.height);
+        
+        x = x + img.cols;
+        maxH = std::max(maxH, img.rows);
         
         if(x > this->size().width()) {
             x = 0;

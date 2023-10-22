@@ -8,6 +8,7 @@
 #include "include/AnimationPlayer.hpp"
 #include "include/MainWindow.hpp"
 #include "include/Utils.hpp"
+#include "include/SpriteSelectorTab.hpp"
 #include <QPainter>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -83,13 +84,21 @@ void AnimationPlayer::paintEvent(QPaintEvent* event) {
         return;
     
     auto spr = win->getSpriteScene()->getSprites();
+    auto rects = win->getSpriteScene()->getRect();
     auto table = win->getAnimationScene()->getTable();
+    auto numbers = win->getSelectorTab()->getNumbers();
     auto max = computeCenter();
     
     if(table.size() > 0 && spr.size() > 0) {
-        auto img = toQImage(spr[table[currentFrame].first]);
+        int index = table[currentFrame].first;
+        std::cout << "index : " << index << std::endl;
+        
+        cv::Mat img_cv = numbers[index];
+        
+        auto img = toQImage(img_cv);
         double posX = (max.x() - img.width())/2.f;
         double posY = (max.y() - img.height())/2.f;
+        
         painter.drawImage(QPoint(posX, posY), img);
     }
 }

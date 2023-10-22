@@ -155,6 +155,7 @@ MainWindow::MainWindow(QWidget *parent)
     
     tabWidget->addTab(slicingTab, "Slicing");
     tabWidget->addTab(editorTab, "Editor");
+    tabWidget->addTab(editorTab, "Editor");
 }
 
 void MainWindow::openEditor() {
@@ -444,6 +445,8 @@ void MainWindow::loadJsonProject() {
             scene->setRect(rects);
             scene->setSprites(sprites);
             scene->update();
+            
+            openEditor();
         }
         
         if(jsonObj.contains("anim")) {

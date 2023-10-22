@@ -34,6 +34,10 @@ public:
     AnimationScene* getAnimationScene() {
         return animationScene;
     }
+    
+    SpriteSelectorTab* getSelectorTab() {
+        return selectorTab;
+    }
 
 public slots:
     void saveProject();

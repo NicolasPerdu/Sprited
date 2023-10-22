@@ -14,6 +14,7 @@
 #include <QLabel>
 #include <QPainter>
 #include <vector>
+#include <unordered_map>
 #include <opencv2/opencv.hpp>
 
 class SpriteSelectorTab : public QLabel {
@@ -21,6 +22,8 @@ public:
     SpriteSelectorTab(QWidget* parent = nullptr) : QLabel(parent) {
         setWindowFlags(windowFlags() | Qt::WindowStaysOnTopHint);
         setGeometry(100, 100, 400, 400);
+        
+        paintEvent(nullptr);
     }
     
     std::vector<std::pair<cv::Rect, int>>& getRect() {
@@ -29,6 +32,10 @@ public:
     
     std::vector<cv::Mat>& getSprites() {
         return sprites;
+    }
+    
+    std::unordered_map<int, cv::Mat>& getNumbers() {
+        return numbers;
     }
     
     void setRect(std::vector<std::pair<cv::Rect, int>> &rect) {
@@ -49,6 +56,7 @@ protected:
 private:
     std::vector<std::pair<cv::Rect, int>> rect;
     std::vector<cv::Mat> sprites;
+    std::unordered_map<int, cv::Mat> numbers;
     cv::Mat spritesheet;
 };
 
