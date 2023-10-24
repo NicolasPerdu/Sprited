@@ -13,6 +13,7 @@
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QPushButton>
+#include <QDoubleSpinBox>
 #include <QTimer>
 
 AnimationPlayer::AnimationPlayer(QWidget* parent) : QLabel(parent) {
@@ -24,23 +25,32 @@ AnimationPlayer::AnimationPlayer(QWidget* parent) : QLabel(parent) {
     QHBoxLayout *hlayout1 = new QHBoxLayout(this);
     QHBoxLayout *hlayout2 = new QHBoxLayout(this);
     
-    QPushButton *playButton = new QPushButton("Play", this);
+    playButton = new QPushButton("Play", this);
     connect(playButton, &QPushButton::clicked, this, &AnimationPlayer::playButtonAction);
     
     QPushButton *stopButton = new QPushButton("Stop", this);
     connect(stopButton, &QPushButton::clicked, this, &AnimationPlayer::stopButtonAction);
     
-    QLabel *anchorLabel = new QLabel("Anchor:", this);
+    QLabel *fpsLabel = new QLabel("FPS:", this);
+    
+    fpsInput = new QDoubleSpinBox(this);
+    fpsInput->setValue(fps);
+    connect(fpsInput, &QDoubleSpinBox::valueChanged, this, &AnimationPlayer::fpsInputAction);
+    
+    /*QLabel *anchorLabel = new QLabel("Anchor:", this);
     
     QPushButton *topleftAnchorButton = new QPushButton("Top Left", this);
     connect(topleftAnchorButton, &QPushButton::clicked, this, &AnimationPlayer::topLeftAnchorButtonAction);
     
     QPushButton *centerAnchorButton = new QPushButton("Center", this);
-    connect(centerAnchorButton, &QPushButton::clicked, this, &AnimationPlayer::centerAnchorButtonAction);
+    connect(centerAnchorButton, &QPushButton::clicked, this, &AnimationPlayer::centerAnchorButtonAction);*/
     
-    hlayout1->addWidget(anchorLabel);
-    hlayout1->addWidget(topleftAnchorButton);
-    hlayout1->addWidget(centerAnchorButton);
+    hlayout1->addWidget(fpsLabel);
+    hlayout1->addWidget(fpsInput);
+    
+    //hlayout1->addWidget(anchorLabel);
+    //hlayout1->addWidget(topleftAnchorButton);
+    //hlayout1->addWidget(centerAnchorButton);
     
     hlayout2->addWidget(playButton);
     hlayout2->addWidget(stopButton);
@@ -50,6 +60,12 @@ AnimationPlayer::AnimationPlayer(QWidget* parent) : QLabel(parent) {
     layout->addLayout(hlayout2);
     
     setLayout(layout);
+}
+
+void AnimationPlayer::fpsInputAction(double val) {
+    fps = val;
+    fpsInput->setValue(fps);
+    stopButtonAction();
 }
 
 QPoint AnimationPlayer::computeCenter() {
@@ -124,29 +140,34 @@ void AnimationPlayer::animate() {
 }
 
 void AnimationPlayer::playButtonAction() {
-    playing = true;
-    
-    currentFrame = 0;
-    currentNumFrame = 0;
-    
-    if(timer == nullptr) {
-        timer = new QTimer(this);
-        connect(timer, &QTimer::timeout, this, &AnimationPlayer::animate);
+    if(!playing) {
+        playButton->setStyleSheet("background-color: #0046fc; border-width: 1px; border-radius: 6px; padding: 3px;");
+        playing = true;
+        currentFrame = 0;
+        currentNumFrame = 0;
+        
+        if(timer == nullptr) {
+            timer = new QTimer(this);
+            connect(timer, &QTimer::timeout, this, &AnimationPlayer::animate);
+        }
+        
+        timer->start(1000.f/fps);
+        update();
     }
-    
-    timer->start(1000.f/60.f);
-    update();
 }
 
 void AnimationPlayer::stopButtonAction() {
-    playing = false;
-    timer->stop();
+    if(playing) {
+        playButton->setStyleSheet("");
+        playing = false;
+        timer->stop();
+    }
 }
 
-void AnimationPlayer::topLeftAnchorButtonAction() {
+/*void AnimationPlayer::topLeftAnchorButtonAction() {
     centerAnchor = false;
 }
 
 void AnimationPlayer::centerAnchorButtonAction() {
     centerAnchor = true; 
-}
+}*/

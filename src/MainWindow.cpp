@@ -155,7 +155,10 @@ MainWindow::MainWindow(QWidget *parent)
     
     tabWidget->addTab(slicingTab, "Slicing");
     tabWidget->addTab(editorTab, "Editor");
-    tabWidget->addTab(editorTab, "Editor");
+    
+    if(selectorTab == nullptr) {
+        selectorTab = new SpriteSelectorTab();
+    }
 }
 
 void MainWindow::openEditor() {
@@ -188,10 +191,8 @@ void MainWindow::enableSelection() {
     
     if(selectEnabled) {
         selectButton->setStyleSheet("background-color: #0046fc; border-width: 1px; border-radius: 6px; padding: 3px;");
-        //mergeButton->update();
     } else {
         selectButton->setStyleSheet("");
-        //mergeButton->update();
     }
 }
 
@@ -386,6 +387,7 @@ void MainWindow::saveProject()
             }
             
             root["anim"] = animG;
+            root["fps"] = playerScene->getFps();
         }
         
     }
@@ -461,6 +463,7 @@ void MainWindow::loadJsonProject() {
             }
             
             animationScene->setTable(anims);
+            playerScene->setFps(jsonObj["fps"].toDouble());
         }
 
     } else {
@@ -609,7 +612,7 @@ void MainWindow::splitSpriteSheet(int area) {
 }
 
 void MainWindow::saveJson(QJsonObject root, QString filenameJson) {
-    QByteArray ba = QJsonDocument(root).toJson();
+    QByteArray ba = QJsonDocument(root).toJson(QJsonDocument::Compact);
 
     QFile fout(filenameJson);
     fout.open(QIODevice::WriteOnly);
