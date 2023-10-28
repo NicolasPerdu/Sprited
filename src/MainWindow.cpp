@@ -5,6 +5,8 @@
 #include "include/MaxRectsBinPack.hpp"
 #include "include/Utils.hpp"
 
+#include "include/tga.h"
+
 #include "ui_MainWindow.h"
 
 #include <QFileDialog>
@@ -35,10 +37,15 @@ MainWindow::MainWindow(QWidget *parent)
     openAct->setStatusTip(tr("Open an existing file"));
     connect(openAct, &QAction::triggered, this, &MainWindow::open);
 
-    QAction *saveAct = new QAction(tr("&Save..."), this);
-    saveAct->setShortcuts(QKeySequence::Save);
-    saveAct->setStatusTip(tr("Save an existing project"));
-    connect(saveAct, &QAction::triggered, this, &MainWindow::saveProject);
+    QAction *saveProjectAct = new QAction(tr("&Save Project..."), this);
+    saveProjectAct->setShortcuts(QKeySequence::Save);
+    saveProjectAct->setStatusTip(tr("Save an existing project"));
+    connect(saveProjectAct, &QAction::triggered, this, &MainWindow::saveProject);
+    
+    QAction *saveSpriteAct = new QAction(tr("&Save Spritesheet..."), this);
+    //saveProjectAct->setShortcuts(QKeySequence::Save);
+    saveSpriteAct->setStatusTip(tr("Save an existing spritesheet"));
+    connect(saveSpriteAct, &QAction::triggered, this, &MainWindow::saveSpriteSheet);
     
     QAction *importAct = new QAction(tr("&Import Sprites..."), this);
     importAct->setShortcuts(QKeySequence::Italic);
@@ -47,7 +54,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     auto fileMenu = menuBar()->addMenu(tr("&File"));
     fileMenu->addAction(openAct);
-    fileMenu->addAction(saveAct);
+    fileMenu->addAction(saveProjectAct);
+    fileMenu->addAction(saveSpriteAct);
     fileMenu->addAction(importAct);
     //auto submenu = fileMenu->addMenu("Submenu");
     //submenu->addAction(new QAction("action1"));
@@ -171,6 +179,42 @@ void MainWindow::openEditor() {
     selectorTab->setSpritesheet(spritesheet);
     selectorTab->setRect(scene->getRect());
     selectorTab->setSprites(scene->getSprites());
+}
+
+void MainWindow::writeTGA(std::string filepath, cv::Mat& ss) {
+    uint8_t idLength = '\0';
+    uint8_t colormapType     =  '\0';
+    uint8_t imageType     =   '\x02';
+    uint16_t colormapOrigin =       0;
+    uint16_t colormapLength  =      0;
+    uint8_t colormapDepth  =      '\0';
+    uint16_t xOrigin    =    0;
+    uint16_t yOrigin  =      0;
+    uint16_t width    =    ss.cols;
+    uint16_t height   =     ss.rows;
+    uint8_t bitsPerPixel    =    '\x20'; // 20
+    uint8_t imageDescriptor     =   ' ';
+    std::string imageId    =    "";
+    
+    cv::Mat outputMat;
+    cv::cvtColor(ss, outputMat, cv::COLOR_BGRA2RGBA);
+    
+    FILE* f = std::fopen(filepath.c_str(), "wb");
+    tga::StdioFileInterface file(f);
+    tga::Encoder encoder(&file);
+    
+    tga::Header header = {idLength, colormapType, imageType, colormapOrigin, colormapLength, colormapDepth, xOrigin, yOrigin, width , height, bitsPerPixel, imageDescriptor, imageId};
+    
+    tga::Image image;
+    image.bytesPerPixel = header.bytesPerPixel();
+    image.rowstride = header.width * header.bytesPerPixel();
+    image.pixels = outputMat.data;
+   
+    encoder.writeHeader(header);
+    encoder.writeImage(header, image);
+    encoder.writeFooter();
+
+    fclose(f);
 }
 
 void MainWindow::merge() {
@@ -320,8 +364,6 @@ void MainWindow::importSprites()
     filename = dirSS.path();
     filename.append("/spritesheet.png");
     
-    cv::imwrite(filename.toStdString(), spritesheet);
-    
     QImage ss = toQImage(spritesheet);
     
     auto minHeight = std::min(ss.height(), 1080);
@@ -331,9 +373,46 @@ void MainWindow::importSprites()
     scene->adjustSize();
 }
 
+void MainWindow::saveSpriteSheet()
+{
+    QString filenameSS = QFileDialog::getSaveFileName(this, tr("Save Spritesheet"), QDir::homePath());
+                                                     // tr("Images (*.png *.jpg *.jp2 *tif *.tga *.gif *.bmp *pam *.ppm)"));
+    
+    if(filenameSS.size() > 0) {
+        QFileInfo fileInfoSS(filenameSS);
+        
+        //if(fileInfoSS.isFile()) {
+            std::cout << "ext : " << fileInfoSS.completeSuffix().toStdString() << std::endl;
+            
+            if(fileInfoSS.completeSuffix() == "png") {
+                cv::imwrite(filenameSS.toStdString(), spritesheet);
+            } else if(fileInfoSS.completeSuffix() == "jpg") {
+                cv::imwrite(filenameSS.toStdString(), spritesheet);
+            } else if(fileInfoSS.completeSuffix() == "jp2") {
+                cv::imwrite(filenameSS.toStdString(), spritesheet);
+            } else if(fileInfoSS.completeSuffix() == "tif") {
+                cv::imwrite(filenameSS.toStdString(), spritesheet);
+            } else if(fileInfoSS.completeSuffix() == "tga") {
+                writeTGA(filenameSS.toStdString(), spritesheet);
+            } else if(fileInfoSS.completeSuffix() == "gif") { // ko
+                //cv::imwrite(filenameSS.toStdString(), spritesheet);
+            } else if(fileInfoSS.completeSuffix() == "bmp") { // ok
+                cv::imwrite(filenameSS.toStdString(), spritesheet);
+            } else if(fileInfoSS.completeSuffix() == "pam") { // ok
+                cv::imwrite(filenameSS.toStdString(), spritesheet);
+            } else if(fileInfoSS.completeSuffix() == "ppm") { // ok
+                cv::Mat out;
+                cv::cvtColor(spritesheet, out, cv::COLOR_BGRA2BGR);
+                cv::imwrite(filenameSS.toStdString(), out);
+            }
+        //}
+    }
+}
+
+
 void MainWindow::saveProject()
 {
-    filenameProject = QFileDialog::getSaveFileName(this, "Save Project", QDir::homePath(), "Json Files (*.json)");
+    filenameProject = QFileDialog::getSaveFileName(this, tr("Save Project"), QDir::homePath(), tr("Json Files (*.json)"));
     
     QJsonObject root;
     

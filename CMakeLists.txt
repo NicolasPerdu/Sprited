@@ -18,7 +18,10 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 
 file(GLOB SOURCES
         src/*.cpp
+	src/pack/*.cpp
+	src/tga/*.cpp
         include/*.hpp
+	include/*.h
 )
 
 file(GLOB UI

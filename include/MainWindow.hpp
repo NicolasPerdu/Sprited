@@ -26,6 +26,7 @@ public:
     MainWindow(QWidget *parent = nullptr);
     bool isSelectEnabled() { return selectEnabled; }
     ~MainWindow();
+    void writeTGA(std::string filepath, cv::Mat& spritesheet);
     
     SpriteScene* getSpriteScene() {
         return scene;
@@ -40,6 +41,7 @@ public:
     }
 
 public slots:
+    void saveSpriteSheet();
     void saveProject();
     void open();
     void openEditor();
@@ -52,6 +54,7 @@ public slots:
     void merge();
 
 private:
+    //void writeData(FILE* outputFile, const int w, const int h, const int channels, const int mipCount, const unsigned char* inRow);
     void loadJsonProject();
     void saveJson(QJsonObject root, QString filenameJson);
     void loadImage(); 
