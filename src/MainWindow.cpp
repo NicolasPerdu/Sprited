@@ -482,7 +482,7 @@ void MainWindow::loadJsonProject() {
 
     if (!jsonFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
         qWarning() << "Failed to open the JSON file.";
-        return 1;
+        return;
     }
 
     QByteArray jsonData = jsonFile.readAll();
@@ -493,7 +493,7 @@ void MainWindow::loadJsonProject() {
 
     if (parseError.error != QJsonParseError::NoError) {
         qWarning() << "Failed to parse JSON:" << parseError.errorString();
-        return 1;
+        return;
     }
 
     if (jsonDoc.isObject()) {
@@ -547,7 +547,7 @@ void MainWindow::loadJsonProject() {
 
     } else {
         qWarning() << "JSON document is not an object.";
-        return 1;
+        return;
     }
 }
 
@@ -622,7 +622,7 @@ void MainWindow::saveIndividualImages() {
     if (scene->getSprites().size() == 0) {
         std::cerr << "Error: there are no sprites." << std::endl;
         QMessageBox::warning(nullptr, tr("Error"), tr("Error: there are no sprites."));
-        return -1;
+        return;
     }
     
     QString dir = QFileDialog::getExistingDirectory(this, "Save directory", "/");
@@ -639,7 +639,7 @@ void MainWindow::splitSpriteSheet(int area) {
     if (filename.size() == 0) {
         std::cerr << "Error: The filename is empty." << std::endl;
         QMessageBox::warning(nullptr, tr("Error"), tr("Error: The filename is empty."));
-        return -1;
+        return;
     }
     
     spritesheet = cv::imread(filename.toStdString());
@@ -647,7 +647,7 @@ void MainWindow::splitSpriteSheet(int area) {
     if (spritesheet.empty()) {
         std::cerr << "Error: Could not load spritesheet image." << std::endl;
         QMessageBox::warning(nullptr, tr("Error"), tr("Error: Could not load spritesheet image."));
-        return -1;
+        return;
     }
     
     scene->setSpritesheet(spritesheet);
@@ -702,7 +702,7 @@ void MainWindow::exportJson() {
     if (scene->getRect().empty()) {
         std::cerr << "Error: Could not find the bounding boxes." << std::endl;
         QMessageBox::warning(nullptr, tr("Error"), tr("Error: Could not find the bounding boxes."));
-        return -1;
+        return;
     }
     
     QString dir = QFileDialog::getExistingDirectory(this, "Save directory", "/");
