@@ -30,7 +30,7 @@ public:
         return rect;
     }
     
-    std::vector<cv::Mat>& getSprites() {
+    std::vector<std::pair<std::string,cv::Mat>>& getSprites() {
         return sprites;
     }
     
@@ -42,7 +42,7 @@ public:
         this->rect = rect;
     }
     
-    void setSprites(std::vector<cv::Mat> &sprites) {
+    void setSprites(std::vector<std::pair<std::string,cv::Mat>> &sprites) {
         this->sprites = sprites;
     }
     
@@ -55,7 +55,7 @@ protected:
     
 private:
     std::vector<std::pair<cv::Rect, int>> rect;
-    std::vector<cv::Mat> sprites;
+    std::vector<std::pair<std::string,cv::Mat>> sprites;
     std::unordered_map<int, cv::Mat> numbers;
     cv::Mat spritesheet;
 };

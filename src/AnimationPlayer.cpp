@@ -75,12 +75,12 @@ QPoint AnimationPlayer::computeCenter() {
     int maxHeight = 0;
     
     for(int i = 0; i < table.size(); i++) {
-        if(spr[table[i].first].cols > maxWidth) {
-            maxWidth = spr[table[i].first].cols;
+        if(spr[table[i].first].second.cols > maxWidth) {
+            maxWidth = spr[table[i].first].second.cols;
         }
         
-        if(spr[table[i].first].rows > maxHeight) {
-            maxHeight = spr[table[i].first].rows;
+        if(spr[table[i].first].second.rows > maxHeight) {
+            maxHeight = spr[table[i].first].second.rows;
         }
     }
     

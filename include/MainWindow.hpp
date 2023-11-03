@@ -51,6 +51,8 @@ public slots:
     void sliceButtonAction();
     void enableSelection();
     void exportJson();
+    void sliceGrid();
+    void updateBaseFilename(QString str); 
     void merge();
 
 private:
@@ -62,6 +64,9 @@ private:
     QSpinBox *areaSlice = nullptr;
     QString filename, filenameProject;
     
+    QSpinBox* xGrid = nullptr;
+    QSpinBox* yGrid = nullptr; 
+    
     bool selectEnabled = false;
     QPushButton *selectButton = nullptr;
     Ui::MainWindow *ui;
@@ -70,5 +75,6 @@ private:
     AnimationScene *animationScene = nullptr;
     AnimationPlayer *playerScene = nullptr;
     cv::Mat spritesheet;
+    std::string baseFilename;
 };
 #endif // MAINWINDOW_H

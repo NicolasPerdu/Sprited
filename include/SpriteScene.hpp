@@ -28,7 +28,7 @@ public:
         return rect;
     }
     
-    std::vector<cv::Mat>& getSprites() {
+    std::vector<std::pair<std::string,cv::Mat>>& getSprites() {
         return sprites;
     }
     
@@ -36,7 +36,7 @@ public:
         this->rect = rect;
     }
     
-    void setSprites(std::vector<cv::Mat> &sprites) {
+    void setSprites(std::vector<std::pair<std::string,cv::Mat>> &sprites) {
         this->sprites = sprites;
     }
     
@@ -55,7 +55,7 @@ private:
     //bool aabb(cv::Rect a, cv::Rect b);
     std::vector<std::pair<cv::Rect, int>> rect;
     std::vector<std::pair<int, cv::Rect>> rectSelected;
-    std::vector<cv::Mat> sprites;
+    std::vector<std::pair<std::string,cv::Mat>> sprites;
     cv::Mat spritesheet;
     MainWindow *win = nullptr;
 };

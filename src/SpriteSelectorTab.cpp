@@ -37,7 +37,7 @@ void SpriteSelectorTab::paintEvent(QPaintEvent* event) {
     for(int i = 0; i < pairs.size(); i++) {
         //std::cout << "pos: " << x << ", " << y << ", " << maxH << std::endl;
         int index = pairs[i].second;
-        cv::Mat img = sprites[index].clone();
+        cv::Mat img = sprites[index].second.clone();
         
         if(rect[index].second == 1) {
             cv::transpose(img, img);
