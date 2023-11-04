@@ -32,8 +32,12 @@ public:
         return scene;
     }
     
-    AnimationScene* getAnimationScene() {
-        return animationScene;
+    AnimationScene* getAnimationScene(int index) {
+        return animationScenes[index];
+    }
+    
+    int getAnimationsSize() {
+        return animationScenes.size();
     }
     
     SpriteSelectorTab* getSelectorTab() {
@@ -54,12 +58,13 @@ public slots:
     void sliceGrid();
     void updateBaseFilename(QString str); 
     void merge();
+    void openNewAnim(int tabIndex); 
 
 private:
     //void writeData(FILE* outputFile, const int w, const int h, const int channels, const int mipCount, const unsigned char* inRow);
     void loadJsonProject();
     void saveJson(QJsonObject root, QString filenameJson);
-    void loadImage(); 
+    int loadImage(); 
     
     QSpinBox *areaSlice = nullptr;
     QString filename, filenameProject;
@@ -72,9 +77,11 @@ private:
     Ui::MainWindow *ui;
     SpriteScene *scene = nullptr;
     SpriteSelectorTab *selectorTab = nullptr;
-    AnimationScene *animationScene = nullptr;
+    std::vector<AnimationScene*> animationScenes;
+    QTabWidget *animationTab = nullptr;
     AnimationPlayer *playerScene = nullptr;
     cv::Mat spritesheet;
     std::string baseFilename;
+    QWidget *animationPlusTab = nullptr;
 };
 #endif // MAINWINDOW_H

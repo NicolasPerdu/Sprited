@@ -9,6 +9,11 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTORCC ON)
 
+set(MACOSX_BUNDLE_ICON_FILE Sprited.icns)
+
+set(app_icon_macos "${CMAKE_CURRENT_SOURCE_DIR}/Sprited.icns")
+set_source_files_properties(${app_icon_macos} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 find_package(OpenCV REQUIRED)
@@ -29,24 +34,7 @@ file(GLOB UI
 
 qt_wrap_ui(FORMS_HEADERS ${UI})
 
-if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    qt_add_executable(Sprited
-        MANUAL_FINALIZATION
-        ${SOURCES}
-	${FORMS_HEADERS}
-    )
-else()
-    if(ANDROID)
-        add_library(Sprited SHARED
-            ${SOURCES}
-        )
-    else()
-        add_executable(Sprited
-            ${SOURCES}
-	    ${FORMS_HEADERS}
-        )
-    endif()
-endif()
+qt_add_executable(Sprited MANUAL_FINALIZATION ${SOURCES} ${FORMS_HEADERS} ${app_icon_macos})
 
 target_link_libraries(Sprited PRIVATE Qt${QT_VERSION_MAJOR}::Widgets ${OpenCV_LIBS})
 

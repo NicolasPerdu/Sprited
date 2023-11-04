@@ -9,7 +9,8 @@
 #include <QTableWidget>
 #include <QHBoxLayout>
 
-AnimationScene::AnimationScene(QWidget* parent) : QWidget(parent) {
+AnimationScene::AnimationScene(std::string name, QWidget* parent) : QWidget(parent) {
+    this->name = name;
     QHBoxLayout *layout = new QHBoxLayout(this);
     
     table = new QTableWidget(100, 2, this);

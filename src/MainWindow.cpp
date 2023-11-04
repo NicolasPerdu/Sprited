@@ -23,6 +23,7 @@
 #include <QSpinBox>
 #include <QPushButton>
 #include <QLineEdit>
+#include <QInputDialog>
 
 #include <vector>
 
@@ -83,15 +84,22 @@ MainWindow::MainWindow(QWidget *parent)
     scene = new SpriteScene(spriteTab);
     scene->setMainWindow(this);
     
-    QWidget *animationTab = new QWidget();
+    animationTab = new QTabWidget();
+    animationTab->setTabPosition(QTabWidget::North);
     animationTab->setFixedSize(1000, 900);
+    
+    //QWidget *animationSubTab = new QWidget(animationTab);
+    //animationSubTab->setFixedSize(1000, 900);
+    
+    animationPlusTab = new QWidget(animationTab);
+    animationPlusTab->setFixedSize(1000, 900);
+    connect(animationTab, &QTabWidget::tabBarClicked, this, &MainWindow::openNewAnim);
     
     QWidget *playerTab = new QWidget();
     playerTab->setFixedSize(1000, 900);
     
-    animationScene = new AnimationScene(animationTab);
-    playerScene = new AnimationPlayer(playerTab);
-    playerScene->setMainWindow(this);
+    //animationScenes.push_back(new AnimationScene(animationSubTab));
+    playerScene = new AnimationPlayer(this, playerTab);
 
     QWidget *slicingTab = new QWidget();
     slicingTab->setFixedSize(200, 800);
@@ -176,6 +184,11 @@ MainWindow::MainWindow(QWidget *parent)
     editorLayout->addWidget(editorButton);
     editorLayout->addStretch();
     
+    //animationTab->addTab(animationSubTab, tr("current"));
+    animationTab->addTab(animationPlusTab, tr("+"));
+    
+    //QObject::connect(animationPlusTab, &QTabWidget::tabBarClicked, openNewAnim);
+    
     mainTabWidget->addTab(spriteTab, tr("Sprite"));
     mainTabWidget->addTab(animationTab, tr("Animation"));
     mainTabWidget->addTab(playerTab, tr("Player"));
@@ -189,8 +202,29 @@ MainWindow::MainWindow(QWidget *parent)
 }
 
 void MainWindow::updateBaseFilename(QString str) {
-    //std::cout << "new text : " << str.toStdString() << std::endl;
     baseFilename = str.toStdString();
+}
+
+void MainWindow::openNewAnim(int tabIndex) {
+    if(tabIndex < (animationTab->count()-1))
+        return;
+    
+    bool ok;
+    QString name = QInputDialog::getText(this, "Enter a name for the animation", "Name:", QLineEdit::Normal, QString(), &ok);
+
+    if(!ok)
+        return;
+    
+    QWidget *animationSubTab = new QWidget(animationTab);
+    animationSubTab->setFixedSize(1000, 900);
+    
+    animationScenes.push_back(new AnimationScene(name.toStdString(), animationSubTab));
+    
+    animationTab->removeTab(animationTab->count()-1);
+    animationTab->addTab(animationSubTab, name);
+    animationTab->addTab(animationPlusTab, "+");
+    
+    playerScene->regenCombo();
 }
 
 void MainWindow::sliceGrid() {
@@ -521,7 +555,7 @@ void MainWindow::saveProject()
         }
         
         
-        auto table = animationScene->getTable();
+        auto table = animationScenes[0]->getTable();
         
         if(table.size() > 0) {
             QJsonArray animG;
@@ -567,11 +601,19 @@ void MainWindow::loadJsonProject() {
     if (jsonDoc.isObject()) {
         QJsonObject jsonObj = jsonDoc.object();
 
-        filename = fileInfo.dir().path() + "/" + jsonObj["spritesheet"].toString();
-        loadImage();
+        if(jsonObj.contains("spritesheet")) {
+            filename = fileInfo.dir().path() + "/" + jsonObj["spritesheet"].toString();
+            
+        } else {
+            filename = QFileDialog::getOpenFileName(this, tr("Open Spritesheet"), QDir::homePath(), tr("Images Files (*.*)"));
+        }
         
-        spritesheet = cv::imread(filename.toStdString(), cv::IMREAD_UNCHANGED);
-        scene->setSpritesheet(spritesheet);
+        int res = loadImage();
+        
+        if(res == 0) {
+            spritesheet = cv::imread(filename.toStdString(), cv::IMREAD_UNCHANGED);
+            scene->setSpritesheet(spritesheet);
+        }
         
         if(jsonObj.contains("rect")) {
             QJsonArray rectA = jsonObj["rect"].toArray();
@@ -609,7 +651,7 @@ void MainWindow::loadJsonProject() {
                 anims.push_back({spr[0].toInt(), spr[1].toInt()});
             }
             
-            animationScene->setTable(anims);
+            animationScenes[0]->setTable(anims);
             playerScene->setFps(jsonObj["fps"].toDouble());
         }
 
@@ -619,7 +661,7 @@ void MainWindow::loadJsonProject() {
     }
 }
 
-void MainWindow::loadImage() {
+int MainWindow::loadImage() {
     QImageReader reader(filename);
     reader.setAutoTransform(true);
 
@@ -629,7 +671,7 @@ void MainWindow::loadImage() {
         QMessageBox::information(this, QGuiApplication::applicationDisplayName(),
                                  tr("Cannot load %1: %2")
                                      .arg(QDir::toNativeSeparators(filename), reader.errorString()));
-        return;
+        return 1;
     }
 
     if (spritesheet.colorSpace().isValid())
@@ -642,6 +684,7 @@ void MainWindow::loadImage() {
     
     scene->setPixmap(QPixmap::fromImage(smallImage));
     scene->adjustSize();
+    return 0;
 }
 
 void MainWindow::open()

@@ -16,7 +16,7 @@ class QTableWidget;
 
 class AnimationScene : QWidget {
 public:
-    AnimationScene(QWidget* parent = nullptr);
+    AnimationScene(std::string name, QWidget* parent = nullptr);
     
     std::vector<std::pair<cv::Rect, int>>& getRect() {
         return rect;
@@ -37,12 +37,16 @@ public:
     std::vector<std::pair<int, int>> getTable();
     void setTable(std::vector<std::pair<int, int>>& table);
     
+    std::string getName() {
+        return name;
+    }
     
 protected:
     //void mousePressEvent(QMouseEvent *ev);
     //void paintEvent(QPaintEvent* event);
     
 private:
+    std::string name;
     std::vector<std::pair<cv::Rect, int>> rect;
     std::vector<cv::Mat> sprites;
     QTableWidget *table = nullptr;

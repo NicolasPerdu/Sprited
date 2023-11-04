@@ -15,14 +15,11 @@
 class MainWindow;
 class QTimer;
 class QPushButton;
+class QComboBox;
 
 class AnimationPlayer : public QLabel {
 public:
-    AnimationPlayer(QWidget* parent = nullptr);
-    
-    void setMainWindow(MainWindow* main) {
-        this->win = main;
-    }
+    AnimationPlayer(MainWindow* win, QWidget* parent = nullptr);
     
     double getFps() {
         return fps;
@@ -32,6 +29,8 @@ public:
         this->fps = fps;
         fpsInput->setValue(fps);
     }
+    
+    void regenCombo();
     
 public slots:
     void playButtonAction();
@@ -48,7 +47,8 @@ private:
     QPoint computeCenter(); 
     MainWindow *win = nullptr;
     QDoubleSpinBox *fpsInput = nullptr;
-    QPushButton *playButton = nullptr; 
+    QPushButton *playButton = nullptr;
+    QComboBox *combo = nullptr;
     bool playing = false;
     double fps = 60.f;
     QTimer *timer = nullptr;
