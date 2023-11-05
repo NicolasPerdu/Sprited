@@ -99,7 +99,6 @@ void SpriteScene::mousePressEvent(QMouseEvent *ev) {
     
     for(int i = 0; i < rect.size(); i++) {
         if(isPointInsideAABB(mouse, rect[i].first)) {
-            //std::cout << "selected rect num " << i << " : " << rect[i].x << ", " << rect[i].y << ", " << rect[i].width << "," << rect[i].height << std::endl;
             rectSelected.push_back({i, rect[i].first});
         }
     }

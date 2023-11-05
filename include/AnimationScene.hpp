@@ -41,6 +41,14 @@ public:
         return name;
     }
     
+    double getFps() {
+        return fps;
+    }
+    
+    void setFps(double fps) {
+        this->fps = fps;
+    }
+    
 protected:
     //void mousePressEvent(QMouseEvent *ev);
     //void paintEvent(QPaintEvent* event);
@@ -50,6 +58,7 @@ private:
     std::vector<std::pair<cv::Rect, int>> rect;
     std::vector<cv::Mat> sprites;
     QTableWidget *table = nullptr;
+    double fps = 60.f;
 };
 
 #endif /* AnimationScene_hpp */

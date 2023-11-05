@@ -28,8 +28,6 @@ void AnimationScene::setTable(std::vector<std::pair<int, int>>& tableIn) {
     table->setColumnCount(2);
     
     for(int i = 0; i < tableIn.size(); i++) {
-        std::cout << "pair : " << tableIn[i].first << ", " << tableIn[i].second << std::endl;
-        
         table->setItem(i, 0, new QTableWidgetItem(QString::number(tableIn[i].first)));
         table->setItem(i, 1, new QTableWidgetItem(QString::number(tableIn[i].second)));
     }

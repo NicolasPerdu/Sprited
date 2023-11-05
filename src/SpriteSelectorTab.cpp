@@ -35,7 +35,6 @@ void SpriteSelectorTab::paintEvent(QPaintEvent* event) {
     numbers.clear();
     
     for(int i = 0; i < pairs.size(); i++) {
-        //std::cout << "pos: " << x << ", " << y << ", " << maxH << std::endl;
         int index = pairs[i].second;
         cv::Mat img = sprites[index].second.clone();
         

@@ -36,6 +36,15 @@ public:
         return animationScenes[index];
     }
     
+    AnimationScene* getAnimationSceneByName(std::string name) {
+        auto it = std::find_if(animationScenes.begin(), animationScenes.end(), [name] (AnimationScene* a) { return a->getName() == name; } );
+        
+        if(it != animationScenes.end())
+            return *(it);
+        else
+            return nullptr; 
+    }
+    
     int getAnimationsSize() {
         return animationScenes.size();
     }
@@ -54,8 +63,9 @@ public slots:
     void splitSpriteSheet(int area);
     void sliceButtonAction();
     void enableSelection();
-    void exportJson();
+    //void exportJson();
     void sliceGrid();
+    void createAnimationScene(QString name);
     void updateBaseFilename(QString str); 
     void merge();
     void openNewAnim(int tabIndex); 

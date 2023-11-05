@@ -27,6 +27,13 @@
 
 #include <vector>
 
+typedef struct {
+    std::string name;
+    std::vector<std::pair<int, int>> spr;
+    int fps;
+} AnimaSerialized;
+
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -123,8 +130,8 @@ MainWindow::MainWindow(QWidget *parent)
     QPushButton *exportSpriteButton = new QPushButton(tr("Split Sprites"), slicingTab);
     connect(exportSpriteButton, &QPushButton::clicked, this, &MainWindow::saveIndividualImages);
     
-    QPushButton *exportJsonButton = new QPushButton("Json", slicingTab);
-    connect(exportJsonButton, &QPushButton::clicked, this, &MainWindow::exportJson);
+    //QPushButton *exportJsonButton = new QPushButton("Json", slicingTab);
+    //connect(exportJsonButton, &QPushButton::clicked, this, &MainWindow::exportJson);
     
     selectButton = new QPushButton("Select Box", slicingTab);
     connect(selectButton, &QPushButton::clicked, this, &MainWindow::enableSelection);
@@ -142,7 +149,7 @@ MainWindow::MainWindow(QWidget *parent)
     
     hLayoutExport->addStretch();
     hLayoutExport->addWidget(exportSpriteButton);
-    hLayoutExport->addWidget(exportJsonButton);
+    //hLayoutExport->addWidget(exportJsonButton);
     hLayoutExport->addStretch();
     
     QHBoxLayout *hLayoutSelect = new QHBoxLayout(slicingTab);
@@ -154,7 +161,7 @@ MainWindow::MainWindow(QWidget *parent)
     xGrid = new QSpinBox(slicingTab);
     yGrid = new QSpinBox(slicingTab);
     
-    QPushButton *sliceGridButton = new QPushButton(tr("Slice Grid"), editorTab);
+    QPushButton *sliceGridButton = new QPushButton(tr("Grid"), editorTab);
     connect(sliceGridButton, &QPushButton::clicked, this, &MainWindow::sliceGrid);
     
     QHBoxLayout *hLayoutSelect2 = new QHBoxLayout(slicingTab);
@@ -173,9 +180,12 @@ MainWindow::MainWindow(QWidget *parent)
     sliceLayout->addLayout(hLayoutSelect2);
     //sliceLayout->addLayout(hLayoutMerge);
     QLabel *exportLabel = new QLabel(tr("Exporting"), slicingTab);
+    
+    QLabel *baseFilenameLabel = new QLabel(tr("File"), slicingTab);
     QLineEdit *baseFilename = new QLineEdit(slicingTab);
     connect(baseFilename, &QLineEdit::textChanged, this, &MainWindow::updateBaseFilename);
     
+    sliceLayout->addWidget(baseFilenameLabel);
     sliceLayout->addWidget(baseFilename);
     sliceLayout->addWidget(exportLabel);
     sliceLayout->addLayout(hLayoutExport);
@@ -215,6 +225,10 @@ void MainWindow::openNewAnim(int tabIndex) {
     if(!ok)
         return;
     
+    createAnimationScene(name);
+}
+
+void MainWindow::createAnimationScene(QString name) {
     QWidget *animationSubTab = new QWidget(animationTab);
     animationSubTab->setFixedSize(1000, 900);
     
@@ -249,7 +263,6 @@ void MainWindow::sliceGrid() {
         for(int j = 0; j < numY; j++) {
             cv::Rect r{i*w, j*h, w, h};
             rects.push_back(std::make_pair(r, 0));
-            std::cout << "r :" << rects.back().first.x << ", " << rects.back().first.y << ", " << rects.back().first.width << ", " << rects.back().first.height << std::endl;
             cv::Mat sprite = spritesheet(r).clone();
             sprites.push_back(std::make_pair(baseFilename+std::to_string(i), sprite));
         }
@@ -354,7 +367,6 @@ void MainWindow::importSprites()
     foreach (QString file, fileList) {
         //QFileInfo fileInfo(directory, file);
         QFileInfo fileInfo(directoryPath, file);
-        //std::cout << "open the file : " << (directoryPath.toStdString() + "/" + file.toStdString()) << std::endl;
         auto img = cv::imread(directoryPath.toStdString() + "/" + file.toStdString(), cv::IMREAD_UNCHANGED);
         rects.push_back(std::make_pair(cv::Rect(0, 0, img.cols, img.rows), false));
         images.push_back(std::make_pair(fileInfo.baseName().toStdString(), img));
@@ -430,7 +442,7 @@ void MainWindow::importSprites()
         bpr = bp.GetUsedRectangles();
     }
     
-    std::cout << "res pack : " << bp.Occupancy() << ", " <<  bp2.Occupancy() << "% size : " << sizePack << std::endl;
+    //std::cout << "res pack : " << bp.Occupancy() << ", " <<  bp2.Occupancy() << "% size : " << sizePack << std::endl;
     spritesheet = cv::Mat(sizePack, sizePack, CV_8UC4, cv::Scalar(0, 0, 0, 0));
     
     for (int i = 0; i < bpr.size(); i++) {
@@ -450,7 +462,6 @@ void MainWindow::importSprites()
         }
         
         cv::Rect roi(bpr[i].x, bpr[i].y, bpr[i].width, bpr[i].height);
-        //std::cout << "copy img(" << roi.x << ", " << roi.y << ", " << roi.width << ", " << roi.height << ") to (" << spritesheet.cols << ", " << spritesheet.rows << std::endl;
         images[i].second.copyTo(spritesheet(roi));
     }
     
@@ -482,7 +493,7 @@ void MainWindow::saveSpriteSheet()
         QFileInfo fileInfoSS(filenameSS);
         
         //if(fileInfoSS.isFile()) {
-            std::cout << "ext : " << fileInfoSS.completeSuffix().toStdString() << std::endl;
+            //std::cout << "ext : " << fileInfoSS.completeSuffix().toStdString() << std::endl;
             
             if(fileInfoSS.completeSuffix() == "png") {
                 cv::imwrite(filenameSS.toStdString(), spritesheet);
@@ -517,21 +528,19 @@ void MainWindow::saveProject()
     QJsonObject root;
     
     if(filename.size() > 0) {
-        QFileInfo fileInfoProj(filenameProject);
+        //QFileInfo fileInfoProj(filenameProject);
         QFileInfo fileInfo(filename);
-        QDir dir(fileInfoProj.dir().path());
-        //std::cout << "file project : " << filenameProject.toStdString() << std::endl;
-        //std::cout << "file : " << filename.toStdString() << std::endl;
-        QString rel = dir.relativeFilePath(fileInfo.dir().path());
+        //QDir dir(fileInfoProj.dir().path());
+        //QString rel = dir.relativeFilePath(fileInfo.dir().path());
         
-        QJsonValue val;
+        //QJsonValue val;
         
-        if(rel == ".")
+        /*if(rel == ".")
             val = fileInfo.fileName();
         else
-            val = rel + "/" + fileInfo.fileName();
+            val = rel + "/" + fileInfo.fileName();*/
        
-        root["spritesheet"] = val;
+        root["spritesheet"] = filename;
         
         auto rectA = scene->getRect();
         auto spriteA = scene->getSprites();
@@ -553,24 +562,31 @@ void MainWindow::saveProject()
             
             root["rect"] = rectG;
         }
+        // Serialize the animations
         
-        
-        auto table = animationScenes[0]->getTable();
-        
-        if(table.size() > 0) {
-            QJsonArray animG;
+        QJsonArray animations;
+        for(int i = 0; i < animationScenes.size(); i++) {
+            auto table = animationScenes[i]->getTable();
             
-            for(int i = 0; i < table.size(); i++) {
-                QJsonArray anim;
-                anim.push_back(table[i].first);
-                anim.push_back(table[i].second);
-                animG.push_back(anim);
+            if(table.size() > 0) {
+                QJsonArray animG;
+                
+                for(int j = 0; j < table.size(); j++) {
+                    QJsonArray anim;
+                    anim.push_back(table[j].first);
+                    anim.push_back(table[j].second);
+                    animG.push_back(anim);
+                }
+                
+                animations.push_back(animationScenes[i]->getName().c_str());
+                animations.push_back(animG);
+                animations.push_back(animationScenes[i]->getFps());
             }
-            
-            root["anim"] = animG;
-            root["fps"] = playerScene->getFps();
         }
         
+        if(animations.size() > 0) {
+            root["anims"] = animations;
+        }
     }
     
     saveJson(root, filenameProject);
@@ -601,10 +617,32 @@ void MainWindow::loadJsonProject() {
     if (jsonDoc.isObject()) {
         QJsonObject jsonObj = jsonDoc.object();
 
+        bool found = false;
+        
         if(jsonObj.contains("spritesheet")) {
-            filename = fileInfo.dir().path() + "/" + jsonObj["spritesheet"].toString();
+            QString path = jsonObj["spritesheet"].toString();
+            QDir dir(path);
             
-        } else {
+            if(dir.isAbsolute()) {
+                QFile file(path);
+                
+                if(file.exists()) {
+                    found = true;
+                    filename = path;
+                }
+            } else {
+                QString filepathRel = fileInfo.dir().path() + "/" + path;
+                
+                QFile file(filepathRel);
+                
+                if(file.exists()) {
+                    found = true;
+                    filename = filepathRel;
+                }
+            }
+        }
+        
+        if(!found){
             filename = QFileDialog::getOpenFileName(this, tr("Open Spritesheet"), QDir::homePath(), tr("Images Files (*.*)"));
         }
         
@@ -613,6 +651,8 @@ void MainWindow::loadJsonProject() {
         if(res == 0) {
             spritesheet = cv::imread(filename.toStdString(), cv::IMREAD_UNCHANGED);
             scene->setSpritesheet(spritesheet);
+        } else {
+            return;
         }
         
         if(jsonObj.contains("rect")) {
@@ -626,7 +666,6 @@ void MainWindow::loadJsonProject() {
             
             for(int i = 0; i < rectA.size(); i++) {
                 QJsonArray rect = rectA[i].toArray();
-                //std::cout << rect[0].toInt() << "," << rect[1].toInt() << "," << rect[2].toInt() << "," << rect[3].toInt() << std::endl;
                 cv::Rect r{rect[1].toInt(), rect[2].toInt(), rect[3].toInt(), rect[4].toInt()};
                 rects.push_back(std::make_pair(r, rect[4].toInt()));
             
@@ -640,19 +679,41 @@ void MainWindow::loadJsonProject() {
             openEditor();
         }
         
-        if(jsonObj.contains("anim")) {
-            QJsonArray sprA = jsonObj["anim"].toArray();
+        if(jsonObj.contains("anims")) {
+            QJsonArray sprA = jsonObj["anims"].toArray();
             
-            std::vector<std::pair<int, int>> anims;
-            anims.reserve(sprA.size());
+            std::vector<AnimaSerialized> anims;
+            anims.reserve(sprA.count()/3);
             
-            for(int i = 0; i < sprA.size(); i++) {
-                QJsonArray spr = sprA[i].toArray();
-                anims.push_back({spr[0].toInt(), spr[1].toInt()});
+            for(int i = 0; i < sprA.count(); i=i+3) {
+                AnimaSerialized as;
+                as.name = sprA[i].toString().toStdString();
+                QJsonArray spr = sprA[i+1].toArray();
+                
+                for(int j = 0; j < spr.count(); j++) {
+                    QJsonArray spr2 = spr[j].toArray();
+                    as.spr.push_back({spr2[0].toInt(), spr2[1].toInt()});
+                }
+                
+                as.fps = sprA[i+2].toInt();
+                anims.push_back(as);
             }
             
-            animationScenes[0]->setTable(anims);
-            playerScene->setFps(jsonObj["fps"].toDouble());
+            for(int i = 0; i < animationScenes.size(); i++) {
+                delete(animationScenes[i]);
+            }
+            
+            animationScenes.clear();
+            animationTab->clear();
+            
+            for(int i = 0; i < anims.size(); i++) {
+                createAnimationScene(QString::fromStdString(anims[i].name));
+                animationScenes.back()->setTable(anims[i].spr);
+                animationScenes.back()->setFps(anims[i].fps);
+            }
+            
+            //animationScenes[0]->setTable(anims);
+            //playerScene->setFps(jsonObj["fps"].toDouble());
         }
 
     } else {
@@ -698,9 +759,10 @@ void MainWindow::open()
     if (dialog.exec())
         fileNames = dialog.selectedFiles();
     
-    QFileInfo fileInfo(fileNames[0]);
+    if(fileNames.empty())
+        return;
     
-    std::cout << "ext : " << fileInfo.suffix().toStdString() << std::endl;
+    QFileInfo fileInfo(fileNames[0]);
     
     if(fileInfo.suffix() == "json") {
         filenameProject = fileNames[0];
@@ -834,7 +896,7 @@ void MainWindow::saveJson(QJsonObject root, QString filenameJson) {
     fout.write(ba);
 }
 
-void MainWindow::exportJson() {
+/*void MainWindow::exportJson() {
     if (scene->getRect().empty()) {
         std::cerr << "Error: Could not find the bounding boxes." << std::endl;
         QMessageBox::warning(nullptr, tr("Error"), tr("Error: Could not find the bounding boxes."));
@@ -867,7 +929,7 @@ void MainWindow::exportJson() {
     }
     
     saveJson(root, file);
-}
+}*/
 
 /*void MainWindow::floodFill(QImage &image, QImage &binary, int x, int y, int label) {
     int width = image.width();

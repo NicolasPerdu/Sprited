@@ -44,8 +44,13 @@ AnimationPlayer::AnimationPlayer(MainWindow *win, QWidget* parent) : QLabel(pare
     
     combo->addItems(items);
     
+    connect(combo, &QComboBox::currentTextChanged, this, &AnimationPlayer::comboBoxUpdated);
+    
+    //currentScene = win->getAnimationScene(0);
+    
     fpsInput = new QDoubleSpinBox(this);
-    fpsInput->setValue(fps);
+    //fpsInput->setValue(currentScene->getFps());
+    
     connect(fpsInput, &QDoubleSpinBox::valueChanged, this, &AnimationPlayer::fpsInputAction);
     
     /*QLabel *anchorLabel = new QLabel("Anchor:", this);
@@ -74,25 +79,37 @@ AnimationPlayer::AnimationPlayer(MainWindow *win, QWidget* parent) : QLabel(pare
     setLayout(layout);
 }
 
+void AnimationPlayer::comboBoxUpdated(QString str) {
+    currentScene = win->getAnimationSceneByName(str.toStdString());
+    if(currentScene)
+        fpsInput->setValue(currentScene->getFps());
+}
+
 void AnimationPlayer::regenCombo() {
-    QStringList items(win->getAnimationsSize());
+    QStringList items;
     
     for(int i = 0; i < win->getAnimationsSize(); i++) {
         items << QString::fromStdString(win->getAnimationScene(i)->getName());
     }
-    
+
     combo->clear();
     combo->addItems(items);
 }
 
 void AnimationPlayer::fpsInputAction(double val) {
-    fps = val;
-    fpsInput->setValue(fps);
+    if(currentScene == nullptr)
+        return;
+    
+    currentScene->setFps(val);
+    fpsInput->setValue(val);
     stopButtonAction();
 }
 
 QPoint AnimationPlayer::computeCenter() {
-    auto table = win->getAnimationScene(0)->getTable();
+    if(currentScene == nullptr)
+        return;
+    
+    auto table = currentScene->getTable();
     auto spr = win->getSpriteScene()->getSprites();
     int maxWidth = 0;
     int maxHeight = 0;
@@ -119,19 +136,18 @@ void AnimationPlayer::paintEvent(QPaintEvent* event) {
     if(win->getSpriteScene() == nullptr)
         return;
     
-    if(win->getAnimationScene(0) == nullptr)
+    if(currentScene == nullptr)
         return;
     
     auto spr = win->getSpriteScene()->getSprites();
     auto rects = win->getSpriteScene()->getRect();
-    auto table = win->getAnimationScene(0)->getTable();
+    auto table = currentScene->getTable();
     auto numbers = win->getSelectorTab()->getNumbers();
     auto max = computeCenter();
     
     if(table.size() > 0 && spr.size() > 0) {
         int index = table[currentFrame].first;
-        std::cout << "index : " << index << std::endl;
-        
+
         cv::Mat img_cv = numbers[index];
         
         auto img = toQImage(img_cv);
@@ -143,7 +159,10 @@ void AnimationPlayer::paintEvent(QPaintEvent* event) {
 }
 
 void AnimationPlayer::animate() {
-    auto table = win->getAnimationScene(0)->getTable();
+    if(currentScene == nullptr)
+        return;
+    
+    auto table = currentScene->getTable();
     
     // render when reach the num frame
     if(table[currentFrame].second == currentNumFrame) {
@@ -169,12 +188,15 @@ void AnimationPlayer::playButtonAction() {
         currentFrame = 0;
         currentNumFrame = 0;
         
+        if(currentScene == nullptr)
+            return;
+        
         if(timer == nullptr) {
             timer = new QTimer(this);
             connect(timer, &QTimer::timeout, this, &AnimationPlayer::animate);
         }
         
-        timer->start(1000.f/fps);
+        timer->start(1000.f/currentScene->getFps());
         update();
     }
 }

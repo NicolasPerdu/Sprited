@@ -16,19 +16,11 @@ class MainWindow;
 class QTimer;
 class QPushButton;
 class QComboBox;
+class AnimationScene;
 
 class AnimationPlayer : public QLabel {
 public:
     AnimationPlayer(MainWindow* win, QWidget* parent = nullptr);
-    
-    double getFps() {
-        return fps;
-    }
-    
-    void setFps(double fps) {
-        this->fps = fps;
-        fpsInput->setValue(fps);
-    }
     
     void regenCombo();
     
@@ -38,6 +30,7 @@ public slots:
     //void topLeftAnchorButtonAction();
     //void centerAnchorButtonAction();
     void fpsInputAction(double val);
+    void comboBoxUpdated(QString str);
     
 protected:
     void paintEvent(QPaintEvent* event);
@@ -50,10 +43,11 @@ private:
     QPushButton *playButton = nullptr;
     QComboBox *combo = nullptr;
     bool playing = false;
-    double fps = 60.f;
+    //double fps = 60.f;
     QTimer *timer = nullptr;
     int currentFrame = 0;
     int currentNumFrame = 0;
+    AnimationScene* currentScene = nullptr;
     //bool centerAnchor = false;
 };
 
